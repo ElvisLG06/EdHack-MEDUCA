@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}Exámenes Subidos - {{ clase.nombre }} - MEDUCA{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ver_curso', curso_id=curso.id) }}">{{ curso.nombre }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ver_clase', clase_id=clase.id) }}">{{ clase.nombre }}</a></li>
+                <li class="breadcrumb-item active">Exámenes Subidos</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-0">
+                    <i data-feather="image" class="me-2"></i>Exámenes Subidos
+                </h1>
+                <p class="text-muted">{{ clase.nombre }} - {{ curso.nombre }} ({{ curso.grado }}° Grado)</p>
+            </div>
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary active" data-exam-type="pretest">
+                    <i data-feather="play" class="me-2"></i>Pretest
+                </button>
+                <button type="button" class="btn btn-outline-success" data-exam-type="postest">
+                    <i data-feather="check" class="me-2"></i>Postest
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="bg-info rounded-circle p-3 me-3">
+                        <i data-feather="play" class="text-white"></i>
+                    </div>
+                    <div>
+                        <h5 class="card-title mb-0">{{ examenes_resueltos.pretest|length }}</h5>
+                        <p class="card-text text-muted">Pretest Subidos</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="bg-success rounded-circle p-3 me-3">
+                        <i data-feather="check" class="text-white"></i>
+                    </div>
+                    <div>
+                        <h5 class="card-title mb-0">{{ examenes_resueltos.postest|length }}</h5>
+                        <p class="card-text text-muted">Postest Subidos</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pretest Section -->
+<div class="exam-section" id="pretest-section">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="play" class="me-2"></i>Pretest - Exámenes Subidos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if examenes_resueltos.pretest %}
+                        <div class="row">
+                            {% for item in examenes_resueltos.pretest %}
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="bg-primary rounded-circle p-2 me-3">
+                                                <i data-feather="user" class="text-white"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="card-title mb-0">{{ item.estudiante.username }}</h6>
+                                                <small class="text-muted">{{ item.estudiante.email }}</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <small class="text-muted">Estado:</small>
+                                            <span class="badge bg-success ms-2">
+                                                <i data-feather="check" class="me-1"></i>Subido
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <small class="text-muted">Fecha de subida:</small>
+                                            <div>{{ item.examen_resuelto.created_at.strftime('%d/%m/%Y %H:%M') }}</div>
+                                        </div>
+                                        
+                                        {% if item.examen_resuelto.calificacion %}
+                                        <div class="mb-3">
+                                            <small class="text-muted">Calificación:</small>
+                                            <div class="h5 text-primary">{{ item.examen_resuelto.calificacion }}/20</div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#imageModal"
+                                                    data-image="{{ item.examen_resuelto.imagen_path }}"
+                                                    data-student="{{ item.estudiante.username }}"
+                                                    data-type="Pretest">
+                                                <i data-feather="eye" class="me-2"></i>Ver Imagen
+                                            </button>
+                                            {% if item.examen.tipo == 'pretest' %}
+                                            <small class="text-info text-center">
+                                                <i data-feather="info" class="me-1"></i>
+                                                Pretest - Solo evaluación inicial
+                                            </small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i data-feather="upload" class="text-muted mb-3" style="width: 48px; height: 48px;"></i>
+                            <h5 class="text-muted">No hay pretest subidos</h5>
+                            <p class="text-muted">Los pretest subidos por los estudiantes aparecerán aquí</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Postest Section -->
+<div class="exam-section" id="postest-section" style="display: none;">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="check" class="me-2"></i>Postest - Exámenes Subidos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if examenes_resueltos.postest %}
+                        <div class="row">
+                            {% for item in examenes_resueltos.postest %}
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center mb-3">
+                                            <div class="bg-success rounded-circle p-2 me-3">
+                                                <i data-feather="user" class="text-white"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="card-title mb-0">{{ item.estudiante.username }}</h6>
+                                                <small class="text-muted">{{ item.estudiante.email }}</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <small class="text-muted">Estado:</small>
+                                            <span class="badge bg-success ms-2">
+                                                <i data-feather="check" class="me-1"></i>Subido
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <small class="text-muted">Fecha de subida:</small>
+                                            <div>{{ item.examen_resuelto.created_at.strftime('%d/%m/%Y %H:%M') }}</div>
+                                        </div>
+                                        
+                                        {% if item.examen_resuelto.calificacion %}
+                                        <div class="mb-3">
+                                            <small class="text-muted">Calificación:</small>
+                                            <div class="h5 text-success">{{ item.examen_resuelto.calificacion }}/20</div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-outline-primary btn-sm" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#imageModal"
+                                                    data-image="{{ item.examen_resuelto.imagen_path }}"
+                                                    data-student="{{ item.estudiante.username }}"
+                                                    data-type="Postest">
+                                                <i data-feather="eye" class="me-2"></i>Ver Imagen
+                                            </button>
+                                            <a href="{{ url_for('feedback_estudiante', examen_resuelto_id=item.examen_resuelto.id) }}" 
+                                               class="btn btn-success btn-sm">
+                                                <i data-feather="message-circle" class="me-2"></i>Ver Feedback
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i data-feather="upload" class="text-muted mb-3" style="width: 48px; height: 48px;"></i>
+                            <h5 class="text-muted">No hay postest subidos</h5>
+                            <p class="text-muted">Los postest subidos por los estudiantes aparecerán aquí</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i data-feather="image" class="me-2"></i>
+                    <span id="modal-title-text">Examen Subido</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modal-image" src="" class="img-fluid" alt="Examen subido">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle exam type switching
+    const examTypeButtons = document.querySelectorAll('[data-exam-type]');
+    const examSections = document.querySelectorAll('.exam-section');
+    
+    examTypeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const examType = this.dataset.examType;
+            
+            // Update button states
+            examTypeButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Show/hide sections
+            examSections.forEach(section => {
+                section.style.display = section.id === `${examType}-section` ? 'block' : 'none';
+            });
+        });
+    });
+    
+    // Handle image modal
+    const imageModal = document.getElementById('imageModal');
+    imageModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const imagePath = button.dataset.image;
+        const studentName = button.dataset.student;
+        const examType = button.dataset.type;
+        
+        const modalTitle = document.getElementById('modal-title-text');
+        const modalImage = document.getElementById('modal-image');
+        
+        modalTitle.textContent = `${examType} - ${studentName}`;
+        modalImage.src = `{{ url_for('static', filename='uploads/') }}${imagePath}`;
+        modalImage.alt = `${examType} de ${studentName}`;
+    });
+});
+</script>
+{% endblock %}

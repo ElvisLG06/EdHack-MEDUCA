@@ -45,6 +45,7 @@ class ExamenResuelto:
         self.respuestas = respuestas
         self.calificacion = calificacion
         self.feedback = None
+        self.estado = "pendiente"  # "pendiente", "completado", "procesando"
         self.created_at = datetime.now()
 
 class Inscripcion:

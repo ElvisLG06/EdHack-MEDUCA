@@ -345,36 +345,62 @@ def subir_examenes(clase_id):
                          estudiantes=estudiantes)
 
 @app.route('/subir_examen_resuelto', methods=['POST'])
-@docente_required
+@login_required
 def subir_examen_resuelto():
     examen_id = request.form['examen_id']
     estudiante_id = request.form['estudiante_id']
     
+    # Verificar permisos - docentes pueden subir para cualquier estudiante, estudiantes solo para sí mismos
+    user = data_store.get_user(session['user_id'])
+    if not user:
+        flash('Usuario no encontrado', 'error')
+        return redirect(url_for('login'))
+    
+    if user.role == 'estudiante' and user.id != estudiante_id:
+        flash('Solo puedes subir tus propios exámenes', 'error')
+        return redirect(url_for('dashboard'))
+    
     if 'imagen' not in request.files:
         flash('No se seleccionó ninguna imagen', 'error')
-        return redirect(request.referrer)
+        return redirect(request.referrer or url_for('dashboard'))
     
     file = request.files['imagen']
-    if file.filename == '':
+    if not file or file.filename == '':
         flash('No se seleccionó ninguna imagen', 'error')
-        return redirect(request.referrer)
+        return redirect(request.referrer or url_for('dashboard'))
     
     if file and allowed_file(file.filename):
+        # Verificar si ya existe un examen resuelto para este estudiante y examen
+        existing = next((er for er in data_store.examenes_resueltos.values() 
+                        if er.examen_id == examen_id and er.estudiante_id == estudiante_id), None)
+        
         filename = secure_filename(f"{examen_id}_{estudiante_id}_{uuid.uuid4().hex}.{file.filename.rsplit('.', 1)[1].lower()}")
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
         
-        # Crear registro de examen resuelto
-        resuelto_id = str(uuid.uuid4())
-        respuestas = {}  # Por ahora vacío, aquí iría el OCR
-        examen_resuelto = ExamenResuelto(resuelto_id, examen_id, estudiante_id, filepath, respuestas)
-        data_store.add_examen_resuelto(examen_resuelto)
-        
-        flash('Imagen del examen subida exitosamente', 'success')
+        try:
+            file.save(filepath)
+            
+            if existing:
+                # Actualizar examen existente
+                existing.imagen_path = filename  # Solo el nombre del archivo
+                existing.estado = "completado"
+                flash('Imagen del examen actualizada exitosamente', 'success')
+            else:
+                # Crear nuevo registro de examen resuelto
+                resuelto_id = str(uuid.uuid4())
+                respuestas = {}  # Por ahora vacío, aquí iría el OCR
+                examen_resuelto = ExamenResuelto(resuelto_id, examen_id, estudiante_id, filename, respuestas)
+                examen_resuelto.estado = "completado"
+                data_store.add_examen_resuelto(examen_resuelto)
+                flash('Imagen del examen subida exitosamente', 'success')
+                
+        except Exception as e:
+            logging.error(f"Error guardando archivo: {e}")
+            flash('Error al guardar la imagen', 'error')
     else:
-        flash('Tipo de archivo no permitido', 'error')
+        flash('Tipo de archivo no permitido. Use JPG, PNG o GIF', 'error')
     
-    return redirect(request.referrer)
+    return redirect(request.referrer or url_for('dashboard'))
 
 @app.route('/inscribir_estudiante', methods=['POST'])
 @docente_required
@@ -408,19 +434,92 @@ def feedback_estudiante(examen_resuelto_id):
         return redirect(url_for('dashboard'))
     
     user = data_store.get_user(session['user_id'])
+    if not user:
+        flash('Usuario no encontrado', 'error')
+        return redirect(url_for('login'))
+    
     if user.role == 'estudiante' and examen_resuelto.estudiante_id != user.id:
         flash('Sin permisos', 'error')
         return redirect(url_for('dashboard'))
     
     examen = data_store.get_examen(examen_resuelto.examen_id)
+    if not examen:
+        flash('Examen no encontrado', 'error')
+        return redirect(url_for('dashboard'))
+        
     clase = data_store.get_clase(examen.clase_id)
+    if not clase:
+        flash('Clase no encontrada', 'error')
+        return redirect(url_for('dashboard'))
+        
     curso = data_store.get_curso(clase.curso_id)
+    if not curso:
+        flash('Curso no encontrado', 'error')
+        return redirect(url_for('dashboard'))
     
     return render_template('feedback_estudiante.html', 
                          examen_resuelto=examen_resuelto,
                          examen=examen,
                          clase=clase,
                          curso=curso)
+
+@app.route('/ver_examenes_subidos/<clase_id>')
+@docente_required
+def ver_examenes_subidos(clase_id):
+    """Vista para que el docente vea los exámenes subidos por estudiantes"""
+    clase = data_store.get_clase(clase_id)
+    if not clase:
+        flash('Clase no encontrada', 'error')
+        return redirect(url_for('dashboard'))
+    
+    curso = data_store.get_curso(clase.curso_id)
+    if not curso or curso.docente_id != session['user_id']:
+        flash('Sin permisos', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Obtener exámenes de esta clase
+    examenes = data_store.get_examenes_by_clase(clase_id)
+    pretest = next((e for e in examenes if e.tipo == 'pretest'), None)
+    postest = next((e for e in examenes if e.tipo == 'postest'), None)
+    
+    # Obtener estudiantes inscritos
+    inscripciones = data_store.get_inscripciones_by_curso(curso.id)
+    estudiantes = [data_store.get_user(insc.estudiante_id) for insc in inscripciones 
+                  if data_store.get_user(insc.estudiante_id)]
+    
+    # Obtener exámenes resueltos
+    examenes_resueltos = {
+        'pretest': [],
+        'postest': []
+    }
+    
+    for estudiante in estudiantes:
+        if pretest:
+            pretest_resuelto = data_store.get_examen_resuelto_by_estudiante_examen(
+                estudiante.id, pretest.id)
+            if pretest_resuelto:
+                examenes_resueltos['pretest'].append({
+                    'estudiante': estudiante,
+                    'examen_resuelto': pretest_resuelto,
+                    'examen': pretest
+                })
+        
+        if postest:
+            postest_resuelto = data_store.get_examen_resuelto_by_estudiante_examen(
+                estudiante.id, postest.id)
+            if postest_resuelto:
+                examenes_resueltos['postest'].append({
+                    'estudiante': estudiante,
+                    'examen_resuelto': postest_resuelto,
+                    'examen': postest
+                })
+    
+    return render_template('ver_examenes_subidos.html',
+                         clase=clase,
+                         curso=curso,
+                         examenes_resueltos=examenes_resueltos,
+                         pretest=pretest,
+                         postest=postest)
 
 # Error handlers
 @app.errorhandler(404)

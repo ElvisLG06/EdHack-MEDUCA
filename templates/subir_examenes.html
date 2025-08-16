@@ -171,9 +171,15 @@
                                         </div>
                                     </div>
                                     
+                                    <!-- Status Display -->
+                                    <div class="student-status mb-3" id="status-{{ estudiante.id }}">
+                                        <!-- Status will be updated by JavaScript -->
+                                    </div>
+                                    
                                     <!-- Upload Form -->
                                     <form method="POST" action="{{ url_for('subir_examen_resuelto') }}" 
-                                          enctype="multipart/form-data" class="upload-form">
+                                          enctype="multipart/form-data" class="upload-form" 
+                                          data-estudiante="{{ estudiante.id }}">
                                         <input type="hidden" name="estudiante_id" value="{{ estudiante.id }}">
                                         <input type="hidden" name="examen_id" class="examen-id-input" value="{{ examenes[0].id if examenes else '' }}">
                                         
@@ -188,18 +194,10 @@
                                             </div>
                                         </div>
                                         
-                                        <button type="submit" class="btn btn-success w-100">
+                                        <button type="submit" class="btn btn-success w-100 submit-btn">
                                             <i data-feather="upload" class="me-2"></i>Subir Examen
                                         </button>
                                     </form>
-                                    
-                                    <!-- Status Display -->
-                                    <div class="upload-status mt-2" style="display: none;">
-                                        <div class="alert alert-success mb-0">
-                                            <i data-feather="check-circle" class="me-2"></i>
-                                            <small>Examen subido exitosamente</small>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -251,9 +249,52 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Function to update student status
+    function updateStudentStatus() {
+        const selectedExamId = document.querySelector('input[name="examen_tipo"]:checked')?.value;
+        if (!selectedExamId) return;
+        
+        // This would typically fetch from server, but for now we'll simulate
+        document.querySelectorAll('.upload-form').forEach(form => {
+            const estudianteId = form.dataset.estudiante;
+            const statusDiv = document.getElementById(`status-${estudianteId}`);
+            
+            // Simulate checking if student has uploaded exam
+            // In real implementation, this would be an AJAX call
+            const hasUploaded = false; // This would come from server
+            
+            if (hasUploaded) {
+                statusDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <i data-feather="check-circle" class="me-2"></i>
+                        <strong>¡Listo!</strong> Examen subido exitosamente
+                    </div>
+                `;
+                form.style.display = 'none';
+            } else {
+                statusDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i data-feather="clock" class="me-2"></i>
+                        <strong>Pendiente</strong> - Esperando imagen del examen
+                    </div>
+                `;
+                form.style.display = 'block';
+            }
+        });
+        
+        // Re-initialize feather icons
+        feather.replace();
+    }
+    
+    // Update status when exam type changes
+    examRadios.forEach(radio => {
+        radio.addEventListener('change', updateStudentStatus);
+    });
+    
     // Auto-select first exam type if available
     if (examRadios.length > 0 && examRadios[0].checked) {
         examRadios[0].dispatchEvent(new Event('change'));
+        updateStudentStatus();
     }
 });
 </script>

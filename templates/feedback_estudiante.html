@@ -160,7 +160,8 @@
                                     </div>
                                 </div>
                                 
-                                <!-- AI Feedback Section -->
+                                <!-- AI Feedback Section (Solo para Postest) -->
+                                {% if examen.tipo == 'postest' %}
                                 <div class="feedback-section">
                                     <strong>Retroalimentación:</strong>
                                     <div class="alert alert-info mt-2">
@@ -180,6 +181,14 @@
                                         </div>
                                     </div>
                                 </div>
+                                {% else %}
+                                <!-- Pretest - Sin feedback detallado -->
+                                <div class="alert alert-info mt-3">
+                                    <i data-feather="info" class="me-2"></i>
+                                    <strong>Pretest completado</strong><br>
+                                    <small>Los pretest solo evalúan conocimientos previos. El feedback detallado se proporcionará en el postest.</small>
+                                </div>
+                                {% endif %}
                                 
                                 <!-- Resources Section (Future Implementation) -->
                                 <div class="resources-section mt-4" style="display: none;">

@@ -32,6 +32,10 @@
                    class="btn btn-outline-info">
                     <i data-feather="upload" class="me-2"></i>Subir Exámenes
                 </a>
+                <a href="{{ url_for('ver_examenes_subidos', clase_id=clase.id) }}" 
+                   class="btn btn-outline-success">
+                    <i data-feather="eye" class="me-2"></i>Ver Subidos
+                </a>
             </div>
         </div>
     </div>
