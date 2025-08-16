@@ -1,0 +1,205 @@
+# **Prompt Completo del Proyecto: Sistema de Evaluación Matemática Inteligente (SEMI) - Nombre del programa sera “MEDUCA”**
+
+---
+
+## **Objetivo General**
+
+Desarrollar una plataforma web destinada a docentes de matemáticas de primaria (1° a 6°) y secundaria (1° a 5°), que permita generar exámenes de forma inteligente a partir de competencias, gestionar alumnos, almacenar evaluaciones físicas digitalizadas, analizar el aprendizaje de los estudiantes y ofrecer retroalimentación personalizada, todo dentro de un año académico.
+
+---
+
+## **1. Autenticación y Roles**
+
+- Inicio de sesión seguro para dos tipos de usuarios:
+    - **Docentes**
+    - **Estudiantes**
+- Dashboards personalizados:
+    - **Docente:** gestión de cursos, clases, competencias, alumnos, creación y revisión de exámenes.
+    - **Estudiante:** visualización de competencias asignadas, resultados, y retroalimentación.
+
+---
+
+## **2. Gestión de Alumnos y Jerarquía**
+
+- El docente podrá **agregar** y **gestionar alumnos** que tengan una cuenta registrada en la plataforma.
+- Cada alumno podrá ser asignado a un **grado y año académico** específicos.
+
+### **Nueva estructura jerárquica:**
+
+- **Desde el docente:** Año → Grado → Curso → Clase → Competencia → Examen
+- **Desde el alumno (automático):** Año → Curso → Clase → Competencia → Examen
+
+### **Cursos**
+
+- Dentro de cada grado, el docente puede crear **cursos** (ejemplo: Matemática, Comunicación, etc.).
+- Para este proyecto, se trabajará únicamente con **Matemática**.
+
+### **Clases**
+
+- Dentro de cada curso, el docente podrá crear **clases**, con nombres asignados automáticamente como:
+    - *Clase 1, Clase 2, Clase 3…*
+- Cada clase debe estar vinculada a una **competencia específica**.
+
+### **Competencias de Matemática (Ejemplo 6to grado)**
+
+1. Resuelve problemas de cantidad.
+2. Resuelve problemas de regularidad, equivalencia y cambio.
+3. Resuelve problemas de gestión de datos e incertidumbre.
+4. Resuelve problemas de forma, movimiento y localización.
+
+> ✅ Las competencias estarán predefinidas y estandarizadas para cada grado.
+> 
+
+---
+
+## **3. Creación de Exámenes Inteligentes**
+
+### **3.1 Flujo de Creación del Examen**
+
+1. El docente crea un **curso y una clase**.
+2. Selecciona la **competencia**.
+3. La **IA (vía Gemini API)** genera automáticamente:
+    - **Cuatro criterios de evaluación** alineados con la competencia seleccionada.
+4. El docente revisa y **valida** los criterios (acepta o solicita otros).
+5. Una vez confirmados los criterios, la **IA genera automáticamente cinco preguntas** alineadas.
+6. El docente elige si el examen será:
+    - **Pretest** (antes de enseñar la competencia).
+    - **Postest** (después de enseñar la competencia).
+
+> ✅ Ahora, cada clase tendrá un solo examen asociado, con sus versiones de pretest y postest.
+> 
+
+### **3.2 Estructura del Examen Generado**
+
+- Cada pregunta incluirá:
+    - Enunciado en la parte superior.
+    - Un espacio amplio en blanco para que el alumno desarrolle su procedimiento.
+    - Un **cuadro pequeño en la parte inferior derecha** para que el alumno escriba su **respuesta final**.
+
+### **3.3 Exportación del Examen**
+
+- El examen se podrá **descargar en PDF** e **imprimir** con un diseño optimizado para escritura manual.
+
+---
+
+## **4. Aplicación y Subida del Examen (Papel)**
+
+### **4.1 Resolución Física**
+
+- Los exámenes se entregan impresos y se resuelven **manualmente en papel**.
+
+### **4.2 Subida de Exámenes (Docente)**
+
+- El docente sube las imágenes del examen resuelto siguiendo este flujo:
+
+### **Flujo de carga**
+
+1. El docente accede a: Año → Grado → Curso → Clase → Competencia → Tipo de examen (**Pretest o Postest**).
+2. Se despliega la lista de alumnos.
+3. Al seleccionar un alumno, se activa la cámara o cargador de archivos.
+4. Se toma o selecciona una **foto del examen resuelto**.
+
+> ⚠️ Importante:
+> 
+> - El **Pretest debe subirse primero**.
+> - Solo cuando el pretest esté almacenado, se habilita la opción para subir el **Postest**.
+> - El sistema vincula automáticamente cada imagen al perfil del alumno, clasificándola por competencia y tipo de examen.
+
+---
+
+## **5. Calificación y Retroalimentación Inteligente**
+
+### **5.1 Evaluación Automática por IA**
+
+- La IA (Gemini API) **analiza exclusivamente la respuesta final** escrita en el cuadro pequeño de cada pregunta.
+- Compara esa respuesta con la **respuesta correcta proporcionada por el docente**.
+
+### **5.2 Retroalimentación al Estudiante**
+
+Si la respuesta es **incorrecta**, la IA generará automáticamente:
+
+- Una **ruta general paso a paso** de cómo resolver el ejercicio.
+- Sugerencias personalizadas con enlaces a:
+    - Videos de YouTube.
+    - Artículos de blogs.
+    - Ejercicios similares.
+
+El docente podrá además **añadir sugerencias personalizadas u observaciones**.
+
+---
+
+## **6. Evaluación de la Efectividad de Enseñanza**
+
+### **6.1 Pretest y Postest**
+
+- El **pretest** se aplica antes de enseñar la competencia.
+- El **postest** se aplica después y debe ser el mismo examen para evaluar el progreso.
+
+### **6.2 Análisis de Resultados**
+
+El sistema realiza automáticamente:
+
+- Cálculo de **promedio** y **desviación estándar**.
+- Generación de **histogramas visuales** de pretest y postest.
+- Comparación de ambos histogramas para medir mejora.
+- Cálculo de un **porcentaje de avance**.
+
+### **6.3 Escalabilidad Institucional**
+
+- Permite agregar resultados de varios docentes y calcular un **promedio de promedios** por grado, turno o institución.
+- Facilita la **toma de decisiones pedagógicas**.
+
+---
+
+## **7. Consideraciones Técnicas**
+
+| Elemento | Detalle |
+| --- | --- |
+| **Asignatura** | Matemáticas |
+| **Grados Soportados** | 1° a 6° de primaria, 1° a 5° de secundaria |
+| **Frontend** | React |
+| **Backend** | Flask (Python) |
+| **Base de Datos** | SQLite (desarrollo), escalable a PostgreSQL |
+| **IA/ML** | Gemini API (modelos de lenguaje) para criterios, preguntas y retroalimentación |
+| **Procesamiento de Imágenes** | Detección de la respuesta final en el cuadro pequeño |
+| **Almacenamiento** | Nube: imágenes, resultados, histogramas, retroalimentación |
+
+---
+
+## **8. Configuración de Gemini API**
+
+Toda interacción de IA (criterios, preguntas, retroalimentación) se realizará mediante:
+
+```bash
+curl "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent" \
+-H 'Content-Type: application/json' \
+-H 'X-goog-api-key: AIzaSyAa89XOH3tFwyR6-eMM812u_8840YexuHA' \
+-X POST \
+-d '{
+  "contents": [
+    {
+      "parts": [
+        {
+          "text": "Explain how AI works in a few words"
+        }
+      ]
+    }
+  ]
+}'
+
+```
+
+---
+
+## **Resumen del Flujo General**
+
+1. **Docente crea curso y clase** dentro del grado y año.
+2. **Selecciona competencia estandarizada**.
+3. **IA (Gemini)** genera 4 criterios de evaluación → docente valida.
+4. **IA (Gemini)** genera 5 preguntas alineadas.
+5. **Sistema crea examen PDF** listo para imprimir.
+6. **Docente entrega y recoge exámenes físicos**.
+7. **Docente sube fotos** de pretest y postest por alumno.
+8. **IA (Gemini)** analiza respuesta final, genera retroalimentación.
+9. **Docente valida y puede añadir comentarios**.
+10. **Sistema analiza aprendizaje** y genera reportes institucionales.
