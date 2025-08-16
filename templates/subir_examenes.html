@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Subir Exámenes - {{ clase.nombre }} - MEDUCA{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ver_curso', curso_id=curso.id) }}">{{ curso.nombre }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ver_clase', clase_id=clase.id) }}">{{ clase.nombre }}</a></li>
+                <li class="breadcrumb-item active">Subir Exámenes</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-0">
+                    <i data-feather="upload" class="me-2"></i>Subir Exámenes Físicos
+                </h1>
+                <p class="text-muted">{{ clase.nombre }} - {{ curso.nombre }} ({{ curso.grado }}° Grado)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Instructions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">
+                    <i data-feather="info" class="me-2"></i>Instrucciones Importantes
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i data-feather="camera" class="me-2"></i>Fotografiar Exámenes</h6>
+                        <ul class="mb-3">
+                            <li>Usa buena iluminación natural</li>
+                            <li>Mantén la cámara perpendicular al papel</li>
+                            <li>Asegúrate de que el texto sea legible</li>
+                            <li>Incluye todo el examen en la foto</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i data-feather="upload-cloud" class="me-2"></i>Proceso de Carga</h6>
+                        <ul class="mb-3">
+                            <li><strong>Primero:</strong> Subir todos los Pretest</li>
+                            <li><strong>Después:</strong> Subir los Postest correspondientes</li>
+                            <li>La IA analizará las respuestas finales automáticamente</li>
+                            <li>Podrás agregar comentarios adicionales después</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Exam Selection -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="file-text" class="me-2"></i>Seleccionar Tipo de Examen
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if examenes %}
+                    <div class="btn-group w-100" role="group">
+                        {% for examen in examenes %}
+                            <input type="radio" class="btn-check" name="examen_tipo" 
+                                   id="examen_{{ examen.id }}" value="{{ examen.id }}" 
+                                   {% if loop.first %}checked{% endif %}>
+                            <label class="btn btn-outline-primary" for="examen_{{ examen.id }}">
+                                <i data-feather="{% if examen.tipo == 'pretest' %}play{% else %}check{% endif %}" class="me-2"></i>
+                                {{ examen.tipo.title() }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mt-3 small text-muted">
+                        <i data-feather="alert-circle" class="me-1"></i>
+                        Recuerda: El <strong>Pretest</strong> debe subirse antes que el <strong>Postest</strong>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i data-feather="alert-triangle" class="me-2"></i>
+                        <strong>No hay exámenes creados</strong><br>
+                        Primero debes <a href="{{ url_for('generar_examen', clase_id=clase.id) }}">crear un examen</a> 
+                        antes de poder subir las respuestas.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="users" class="me-2"></i>Estudiantes Inscritos
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if estudiantes %}
+                    <div class="small text-muted mb-2">
+                        Total de estudiantes: <strong>{{ estudiantes|length }}</strong>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        {% for estudiante in estudiantes[:5] %}
+                            <div class="list-group-item d-flex align-items-center px-0">
+                                <div class="bg-primary rounded-circle p-1 me-2">
+                                    <i data-feather="user" class="text-white" style="width: 14px; height: 14px;"></i>
+                                </div>
+                                <span>{{ estudiante.username }}</span>
+                            </div>
+                        {% endfor %}
+                        {% if estudiantes|length > 5 %}
+                            <div class="list-group-item px-0 text-muted">
+                                <small>Y {{ estudiantes|length - 5 }} estudiantes más...</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i data-feather="user-x" class="text-muted mb-2" style="width: 32px; height: 32px;"></i>
+                        <p class="text-muted mb-0">No hay estudiantes inscritos</p>
+                        <small class="text-muted">
+                            <a href="{{ url_for('ver_curso', curso_id=curso.id) }}">Inscribir estudiantes</a>
+                        </small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Students Upload Interface -->
+{% if examenes and estudiantes %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="upload-cloud" class="me-2"></i>Subir Exámenes por Estudiante
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="selected-exam-info" class="alert alert-info mb-4">
+                    <i data-feather="info" class="me-2"></i>
+                    Subiendo exámenes para: <strong id="exam-type-text">Pretest</strong>
+                </div>
+                
+                <div class="row">
+                    {% for estudiante in estudiantes %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="bg-primary rounded-circle p-2 me-3">
+                                            <i data-feather="user" class="text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="card-title mb-0">{{ estudiante.username }}</h6>
+                                            <small class="text-muted">{{ estudiante.email }}</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Upload Form -->
+                                    <form method="POST" action="{{ url_for('subir_examen_resuelto') }}" 
+                                          enctype="multipart/form-data" class="upload-form">
+                                        <input type="hidden" name="estudiante_id" value="{{ estudiante.id }}">
+                                        <input type="hidden" name="examen_id" class="examen-id-input" value="{{ examenes[0].id if examenes else '' }}">
+                                        
+                                        <div class="mb-3">
+                                            <label class="form-label">
+                                                <i data-feather="camera" class="me-2"></i>Foto del Examen
+                                            </label>
+                                            <input type="file" class="form-control" name="imagen" 
+                                                   accept="image/*" capture="environment" required>
+                                            <div class="form-text">
+                                                Formatos: JPG, PNG, GIF (máx. 16MB)
+                                            </div>
+                                        </div>
+                                        
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i data-feather="upload" class="me-2"></i>Subir Examen
+                                        </button>
+                                    </form>
+                                    
+                                    <!-- Status Display -->
+                                    <div class="upload-status mt-2" style="display: none;">
+                                        <div class="alert alert-success mb-0">
+                                            <i data-feather="check-circle" class="me-2"></i>
+                                            <small>Examen subido exitosamente</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle exam type selection
+    const examRadios = document.querySelectorAll('input[name="examen_tipo"]');
+    const examTypeText = document.getElementById('exam-type-text');
+    const examenIdInputs = document.querySelectorAll('.examen-id-input');
+    
+    examRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                const label = document.querySelector(`label[for="${this.id}"]`);
+                const examType = label.textContent.trim();
+                examTypeText.textContent = examType;
+                
+                // Update all form inputs with selected exam ID
+                examenIdInputs.forEach(input => {
+                    input.value = this.value;
+                });
+            }
+        });
+    });
+    
+    // Handle form submissions with loading states
+    const uploadForms = document.querySelectorAll('.upload-form');
+    uploadForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const submitButton = form.querySelector('button[type="submit"]');
+            const originalText = submitButton.innerHTML;
+            
+            // Show loading state
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i data-feather="loader" class="me-2"></i>Subiendo...';
+            
+            // Re-initialize feather icons for the new loader icon
+            feather.replace();
+        });
+    });
+    
+    // Auto-select first exam type if available
+    if (examRadios.length > 0 && examRadios[0].checked) {
+        examRadios[0].dispatchEvent(new Event('change'));
+    }
+});
+</script>
+{% endblock %}

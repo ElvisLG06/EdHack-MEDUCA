@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}{{ curso.nombre }} - MEDUCA{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">{{ curso.nombre }}</li>
+                    </ol>
+                </nav>
+                <h1 class="h3 mb-0">{{ curso.nombre }}</h1>
+                <p class="text-muted">{{ curso.grado }}° Grado - {{ curso.ano_academico }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Course Info Card -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="list" class="me-2"></i>Clases del Curso
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if clases %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Clase</th>
+                                    <th>Competencia</th>
+                                    <th>Exámenes</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for clase in clases %}
+                                    {% set competencia = competencias | selectattr('id', 'equalto', clase.competencia_id) | first %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ clase.nombre }}</strong>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                {{ competencia.nombre if competencia else 'Competencia no encontrada' }}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">0</span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="{{ url_for('ver_clase', clase_id=clase.id) }}" 
+                                                   class="btn btn-outline-primary">
+                                                    <i data-feather="eye" class="me-1"></i>Ver
+                                                </a>
+                                                <a href="{{ url_for('generar_examen', clase_id=clase.id) }}" 
+                                                   class="btn btn-outline-success">
+                                                    <i data-feather="plus" class="me-1"></i>Examen
+                                                </a>
+                                                <a href="{{ url_for('subir_examenes', clase_id=clase.id) }}" 
+                                                   class="btn btn-outline-info">
+                                                    <i data-feather="upload" class="me-1"></i>Subir
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i data-feather="book-open" class="text-muted mb-3" style="width: 48px; height: 48px;"></i>
+                        <h6 class="text-muted">No hay clases creadas</h6>
+                        <p class="text-muted mb-0">Crea tu primera clase para comenzar</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Crear Nueva Clase -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="plus-circle" class="me-2"></i>Crear Nueva Clase
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('crear_clase', curso_id=curso.id) }}">
+                    <div class="mb-3">
+                        <label for="competencia_id" class="form-label">
+                            <i data-feather="target" class="me-2"></i>Competencia Matemática
+                        </label>
+                        <select class="form-select" id="competencia_id" name="competencia_id" required>
+                            <option value="">Selecciona una competencia</option>
+                            {% for competencia in competencias %}
+                                <option value="{{ competencia.id }}" 
+                                        title="{{ competencia.descripcion }}">
+                                    {{ competencia.nombre }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            La clase se nombrará automáticamente como "Clase {{ clases|length + 1 }}"
+                        </div>
+                    </div>
+                    
+                    <div id="competencia-descripcion" class="alert alert-light" style="display: none;">
+                        <small id="descripcion-text" class="text-muted"></small>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i data-feather="check" class="me-2"></i>Crear Clase
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Course Statistics -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="bar-chart-2" class="me-2"></i>Estadísticas del Curso
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h4 class="text-primary mb-0">{{ clases|length }}</h4>
+                            <small class="text-muted">Clases</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-success mb-0">0</h4>
+                        <small class="text-muted">Exámenes</small>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <h6 class="text-info mb-0">0</h6>
+                    <small class="text-muted">Estudiantes Inscritos</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Show competencia description on select
+document.getElementById('competencia_id').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    const descripcion = selectedOption.getAttribute('title');
+    const descripcionDiv = document.getElementById('competencia-descripcion');
+    const descripcionText = document.getElementById('descripcion-text');
+    
+    if (descripcion && descripcion.trim()) {
+        descripcionText.textContent = descripcion;
+        descripcionDiv.style.display = 'block';
+    } else {
+        descripcionDiv.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

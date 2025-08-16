@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+
+{% block title %}Generar Examen - MEDUCA{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ver_curso', curso_id=curso.id) }}">{{ curso.nombre }}</a></li>
+                <li class="breadcrumb-item active">Generar Examen - {{ clase.nombre }}</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-0">
+                    <i data-feather="file-plus" class="me-2"></i>Generar Examen
+                </h1>
+                <p class="text-muted">{{ clase.nombre }} - {{ competencia.nombre if competencia else 'Competencia no definida' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Step 1: Generate Criteria -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <span class="badge bg-primary me-2">1</span>
+                    Generar Criterios de Evaluación
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    La IA generará 4 criterios de evaluación específicos para la competencia: 
+                    <strong>{{ competencia.nombre if competencia else 'No definida' }}</strong>
+                </p>
+                
+                <button type="button" class="btn btn-primary" id="generar-criterios">
+                    <i data-feather="cpu" class="me-2"></i>Generar Criterios con IA
+                </button>
+                
+                <div id="criterios-container" style="display: none;" class="mt-4">
+                    <h6>Criterios de Evaluación Generados:</h6>
+                    <div id="criterios-list" class="list-group mb-3"></div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-success" id="aprobar-criterios">
+                            <i data-feather="check" class="me-2"></i>Aprobar Criterios
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="regenerar-criterios">
+                            <i data-feather="refresh-cw" class="me-2"></i>Generar Otros
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="loading-criterios" style="display: none;" class="text-center mt-3">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2">Generando criterios con IA...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Generate Questions -->
+        <div class="card mb-4" id="step-2" style="display: none;">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <span class="badge bg-primary me-2">2</span>
+                    Generar Preguntas del Examen
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    La IA generará 5 preguntas alineadas con los criterios de evaluación aprobados.
+                </p>
+                
+                <button type="button" class="btn btn-primary" id="generar-preguntas">
+                    <i data-feather="cpu" class="me-2"></i>Generar Preguntas con IA
+                </button>
+                
+                <div id="preguntas-container" style="display: none;" class="mt-4">
+                    <h6>Preguntas Generadas:</h6>
+                    <div id="preguntas-list" class="mb-3"></div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-success" id="aprobar-preguntas">
+                            <i data-feather="check" class="me-2"></i>Aprobar Preguntas
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="regenerar-preguntas">
+                            <i data-feather="refresh-cw" class="me-2"></i>Generar Otras
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="loading-preguntas" style="display: none;" class="text-center mt-3">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2">Generando preguntas con IA...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Create Exam -->
+        <div class="card" id="step-3" style="display: none;">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <span class="badge bg-primary me-2">3</span>
+                    Crear y Descargar Examen
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="crear-examen-form" method="POST" action="{{ url_for('crear_examen') }}">
+                    <input type="hidden" name="clase_id" value="{{ clase.id }}">
+                    <input type="hidden" id="criterios-input" name="criterios">
+                    <input type="hidden" id="preguntas-input" name="preguntas">
+                    
+                    <div class="mb-4">
+                        <label for="tipo" class="form-label">
+                            <i data-feather="tag" class="me-2"></i>Tipo de Examen
+                        </label>
+                        <select class="form-select" name="tipo" required>
+                            <option value="">Selecciona el tipo</option>
+                            <option value="pretest">Pretest - Antes de enseñar la competencia</option>
+                            <option value="postest">Postest - Después de enseñar la competencia</option>
+                        </select>
+                        <div class="form-text">
+                            <i data-feather="info" class="me-1"></i>
+                            El pretest debe aplicarse antes del postest para medir el progreso
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-success">
+                        <i data-feather="check-circle" class="me-2"></i>
+                        <strong>Listo para crear el examen</strong><br>
+                        Una vez creado, podrás descargarlo en PDF para imprimir y aplicar físicamente.
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">
+                        <i data-feather="download" class="me-2"></i>Crear y Descargar Examen PDF
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Competencia Info -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="target" class="me-2"></i>Competencia
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if competencia %}
+                    <h6>{{ competencia.nombre }}</h6>
+                    <p class="text-muted mb-3">{{ competencia.descripcion }}</p>
+                    
+                    <div class="small">
+                        <strong>Grado:</strong> {{ curso.grado }}°<br>
+                        <strong>Materia:</strong> {{ curso.nombre }}
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i data-feather="alert-triangle" class="me-2"></i>
+                        Competencia no encontrada
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Process Guide -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="help-circle" class="me-2"></i>Guía del Proceso
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-primary"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Criterios IA</h6>
+                            <small class="text-muted">La IA genera criterios específicos</small>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Preguntas IA</h6>
+                            <small class="text-muted">5 preguntas alineadas</small>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <h6 class="mb-1">Crear PDF</h6>
+                            <small class="text-muted">Examen listo para imprimir</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let criteriosAprobados = [];
+let preguntasAprobadas = [];
+
+// Step 1: Generate Criteria
+document.getElementById('generar-criterios').addEventListener('click', function() {
+    generarCriterios();
+});
+
+document.getElementById('regenerar-criterios').addEventListener('click', function() {
+    generarCriterios();
+});
+
+document.getElementById('aprobar-criterios').addEventListener('click', function() {
+    // Show step 2
+    document.getElementById('step-2').style.display = 'block';
+    this.textContent = 'Criterios Aprobados';
+    this.disabled = true;
+    this.classList.remove('btn-success');
+    this.classList.add('btn-outline-success');
+});
+
+// Step 2: Generate Questions
+document.getElementById('generar-preguntas').addEventListener('click', function() {
+    generarPreguntas();
+});
+
+document.getElementById('regenerar-preguntas').addEventListener('click', function() {
+    generarPreguntas();
+});
+
+document.getElementById('aprobar-preguntas').addEventListener('click', function() {
+    // Show step 3
+    document.getElementById('step-3').style.display = 'block';
+    this.textContent = 'Preguntas Aprobadas';
+    this.disabled = true;
+    this.classList.remove('btn-success');
+    this.classList.add('btn-outline-success');
+    
+    // Populate hidden inputs
+    document.getElementById('criterios-input').value = JSON.stringify(criteriosAprobados);
+    
+    // Convert questions to the format expected by the form
+    const preguntasForForm = preguntasAprobadas.map(p => JSON.stringify(p));
+    preguntasForForm.forEach(p => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'preguntas';
+        input.value = p;
+        document.getElementById('crear-examen-form').appendChild(input);
+    });
+});
+
+function generarCriterios() {
+    document.getElementById('loading-criterios').style.display = 'block';
+    document.getElementById('criterios-container').style.display = 'none';
+    
+    const formData = new FormData();
+    formData.append('clase_id', '{{ clase.id }}');
+    
+    fetch('{{ url_for("generar_criterios") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('loading-criterios').style.display = 'none';
+        
+        if (data.criterios) {
+            criteriosAprobados = data.criterios;
+            const container = document.getElementById('criterios-list');
+            container.innerHTML = '';
+            
+            data.criterios.forEach((criterio, index) => {
+                const item = document.createElement('div');
+                item.className = 'list-group-item';
+                item.innerHTML = `<strong>${index + 1}.</strong> ${criterio}`;
+                container.appendChild(item);
+            });
+            
+            document.getElementById('criterios-container').style.display = 'block';
+        } else {
+            alert('Error al generar criterios: ' + (data.error || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        document.getElementById('loading-criterios').style.display = 'none';
+        alert('Error de conexión: ' + error.message);
+    });
+}
+
+function generarPreguntas() {
+    document.getElementById('loading-preguntas').style.display = 'block';
+    document.getElementById('preguntas-container').style.display = 'none';
+    
+    const formData = new FormData();
+    formData.append('clase_id', '{{ clase.id }}');
+    criteriosAprobados.forEach(criterio => {
+        formData.append('criterios', criterio);
+    });
+    
+    fetch('{{ url_for("generar_preguntas") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('loading-preguntas').style.display = 'none';
+        
+        if (data.preguntas) {
+            preguntasAprobadas = data.preguntas;
+            const container = document.getElementById('preguntas-list');
+            container.innerHTML = '';
+            
+            data.preguntas.forEach((pregunta, index) => {
+                const card = document.createElement('div');
+                card.className = 'card mb-2';
+                card.innerHTML = `
+                    <div class="card-body">
+                        <h6 class="card-title">Pregunta ${pregunta.numero}:</h6>
+                        <p class="card-text">${pregunta.enunciado}</p>
+                        <small class="text-muted">
+                            <strong>Respuesta esperada:</strong> ${pregunta.respuesta_correcta}
+                        </small>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+            
+            document.getElementById('preguntas-container').style.display = 'block';
+        } else {
+            alert('Error al generar preguntas: ' + (data.error || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        document.getElementById('loading-preguntas').style.display = 'none';
+        alert('Error de conexión: ' + error.message);
+    });
+}
+</script>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -1.5rem;
+    top: 1.5rem;
+    width: 2px;
+    height: calc(100% + 1rem);
+    background-color: var(--bs-border-color);
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -1.8rem;
+    top: 0.3rem;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background-color: var(--bs-border-color);
+}
+
+.timeline-marker.bg-primary {
+    background-color: var(--bs-primary) !important;
+}
+
+.timeline-content {
+    padding-left: 0.5rem;
+}
+</style>
+{% endblock %}

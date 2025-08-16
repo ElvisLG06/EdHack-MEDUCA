@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}{{ clase.nombre }} - Resultados - MEDUCA{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ver_curso', curso_id=curso.id) }}">{{ curso.nombre }}</a></li>
+                <li class="breadcrumb-item active">{{ clase.nombre }}</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-0">
+                    <i data-feather="bar-chart-2" class="me-2"></i>{{ clase.nombre }}
+                </h1>
+                <p class="text-muted">
+                    {{ competencia.nombre if competencia else 'Competencia no definida' }} - 
+                    {{ curso.grado }}° Grado
+                </p>
+            </div>
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('generar_examen', clase_id=clase.id) }}" 
+                   class="btn btn-primary">
+                    <i data-feather="plus" class="me-2"></i>Crear Examen
+                </a>
+                <a href="{{ url_for('subir_examenes', clase_id=clase.id) }}" 
+                   class="btn btn-outline-info">
+                    <i data-feather="upload" class="me-2"></i>Subir Exámenes
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Competencia Information -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="target" class="me-2"></i>Información de la Competencia
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if competencia %}
+                    <h6>{{ competencia.nombre }}</h6>
+                    <p class="text-muted mb-3">{{ competencia.descripcion }}</p>
+                    
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="border-end">
+                                <h4 class="text-primary mb-0">{{ examenes|length }}</h4>
+                                <small class="text-muted">Exámenes Creados</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="border-end">
+                                <h4 class="text-success mb-0">0</h4>
+                                <small class="text-muted">Pretest Aplicados</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <h4 class="text-info mb-0">0</h4>
+                            <small class="text-muted">Postest Aplicados</small>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i data-feather="alert-triangle" class="me-2"></i>
+                        Competencia no encontrada en el sistema
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="trending-up" class="me-2"></i>Progreso General
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <div class="display-4 text-muted">--</div>
+                    <small class="text-muted">Mejora Promedio</small>
+                </div>
+                <div class="small text-muted">
+                    Los datos aparecerán cuando se suban<br>
+                    tanto pretest como postest
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Exams List -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="file-text" class="me-2"></i>Exámenes de esta Clase
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if examenes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Criterios de Evaluación</th>
+                                    <th>Preguntas</th>
+                                    <th>Fecha de Creación</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for examen in examenes %}
+                                <tr>
+                                    <td>
+                                        <span class="badge {% if examen.tipo == 'pretest' %}bg-info{% else %}bg-success{% endif %}">
+                                            <i data-feather="{% if examen.tipo == 'pretest' %}play{% else %}check{% endif %}" class="me-1"></i>
+                                            {{ examen.tipo.title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ examen.criterios|length }} criterios</small>
+                                        <div class="mt-1">
+                                            {% for criterio in examen.criterios[:2] %}
+                                                <div class="small">• {{ criterio }}</div>
+                                            {% endfor %}
+                                            {% if examen.criterios|length > 2 %}
+                                                <small class="text-muted">y {{ examen.criterios|length - 2 }} más...</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ examen.preguntas|length }} preguntas</span>
+                                    </td>
+                                    <td>{{ examen.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('descargar_examen', examen_id=examen.id) }}" 
+                                               class="btn btn-outline-primary" title="Descargar PDF">
+                                                <i data-feather="download" class="me-1"></i>PDF
+                                            </a>
+                                            <button type="button" class="btn btn-outline-info" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#verExamenModal"
+                                                    data-examen="{{ examen.id }}"
+                                                    data-tipo="{{ examen.tipo }}"
+                                                    data-preguntas="{{ examen.preguntas|tojson|e }}">
+                                                <i data-feather="eye" class="me-1"></i>Ver
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i data-feather="file-plus" class="text-muted mb-3" style="width: 48px; height: 48px;"></i>
+                        <h5 class="text-muted">No hay exámenes creados</h5>
+                        <p class="text-muted mb-3">Crea tu primer examen para esta clase usando inteligencia artificial</p>
+                        <a href="{{ url_for('generar_examen', clase_id=clase.id) }}" class="btn btn-primary">
+                            <i data-feather="plus-circle" class="me-2"></i>Crear Primer Examen
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Student Results (Future Implementation) -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="users" class="me-2"></i>Resultados por Estudiante
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-5">
+                    <i data-feather="upload-cloud" class="text-muted mb-3" style="width: 48px; height: 48px;"></i>
+                    <h5 class="text-muted">Resultados no disponibles</h5>
+                    <p class="text-muted mb-3">
+                        Los resultados aparecerán cuando subas las imágenes de los exámenes resueltos
+                    </p>
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6><i data-feather="upload" class="me-2"></i>Próximos Pasos:</h6>
+                                    <ol class="mb-0 text-start">
+                                        <li>Imprime y aplica los exámenes físicamente</li>
+                                        <li>Fotografía los exámenes resueltos</li>
+                                        <li>Sube las imágenes usando el botón "Subir Exámenes"</li>
+                                        <li>La IA analizará automáticamente las respuestas</li>
+                                        <li>Revisa y complementa el feedback generado</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Ver Examen -->
+<div class="modal fade" id="verExamenModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i data-feather="eye" class="me-2"></i>Vista Previa del Examen
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-exam-content">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <a href="#" id="modal-download-link" class="btn btn-primary" target="_blank">
+                    <i data-feather="download" class="me-2"></i>Descargar PDF
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const verExamenModal = document.getElementById('verExamenModal');
+    
+    verExamenModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const examenId = button.getAttribute('data-examen');
+        const tipo = button.getAttribute('data-tipo');
+        const preguntasJson = button.getAttribute('data-preguntas');
+        
+        try {
+            const preguntas = JSON.parse(preguntasJson);
+            const modalContent = document.getElementById('modal-exam-content');
+            const downloadLink = document.getElementById('modal-download-link');
+            
+            // Update download link
+            downloadLink.href = `{{ url_for('descargar_examen', examen_id='PLACEHOLDER') }}`.replace('PLACEHOLDER', examenId);
+            
+            // Update modal title
+            const modalTitle = document.querySelector('#verExamenModal .modal-title');
+            modalTitle.innerHTML = `<i data-feather="eye" class="me-2"></i>Vista Previa - ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`;
+            
+            // Build content
+            let content = `
+                <div class="alert alert-${tipo === 'pretest' ? 'info' : 'success'}">
+                    <strong>Tipo:</strong> ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+                </div>
+                <h6 class="mb-3">Preguntas del Examen:</h6>
+            `;
+            
+            preguntas.forEach((pregunta, index) => {
+                content += `
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title">Pregunta ${index + 1}:</h6>
+                            <p class="card-text">${pregunta.enunciado}</p>
+                            <small class="text-muted">
+                                <strong>Respuesta esperada:</strong> ${pregunta.respuesta_correcta}
+                            </small>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            modalContent.innerHTML = content;
+            
+            // Re-initialize feather icons
+            feather.replace();
+            
+        } catch (error) {
+            console.error('Error parsing exam data:', error);
+            document.getElementById('modal-exam-content').innerHTML = `
+                <div class="alert alert-danger">
+                    <i data-feather="alert-circle" class="me-2"></i>
+                    Error al cargar la información del examen
+                </div>
+            `;
+        }
+    });
+});
+</script>
+{% endblock %}
