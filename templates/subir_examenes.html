@@ -48,10 +48,10 @@
                     <div class="col-md-6">
                         <h6><i data-feather="upload-cloud" class="me-2"></i>Proceso de Carga</h6>
                         <ul class="mb-3">
-                            <li><strong>Primero:</strong> Subir todos los Pretest</li>
-                            <li><strong>Después:</strong> Subir los Postest correspondientes</li>
-                            <li>La IA analizará las respuestas finales automáticamente</li>
-                            <li>Podrás agregar comentarios adicionales después</li>
+                            <li><strong>Primero:</strong> Selecciona si subes Pretest o Postest</li>
+                            <li><strong>Segundo:</strong> Selecciona el estudiante y sube la imagen</li>
+                            <li>La IA analizará las respuestas automáticamente</li>
+                            <li>Podrás revisar y complementar el feedback después</li>
                         </ul>
                     </div>
                 </div>
@@ -66,26 +66,36 @@
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title mb-0">
-                    <i data-feather="file-text" class="me-2"></i>Seleccionar Tipo de Examen
+                    <i data-feather="tag" class="me-2"></i>Seleccionar Tipo de Aplicación
                 </h5>
             </div>
             <div class="card-body">
                 {% if examenes %}
+                    <div class="alert alert-info mb-3">
+                        <i data-feather="info" class="me-2"></i>
+                        <strong>Examen Unificado:</strong> El mismo examen sirve para pretest y postest. 
+                        Selecciona el tipo según cuándo lo aplicaste.
+                    </div>
+                    
                     <div class="btn-group w-100" role="group">
-                        {% for examen in examenes %}
-                            <input type="radio" class="btn-check" name="examen_tipo" 
-                                   id="examen_{{ examen.id }}" value="{{ examen.id }}" 
-                                   {% if loop.first %}checked{% endif %}>
-                            <label class="btn btn-outline-primary" for="examen_{{ examen.id }}">
-                                <i data-feather="{% if examen.tipo == 'pretest' %}play{% else %}check{% endif %}" class="me-2"></i>
-                                {{ examen.tipo.title() }}
-                            </label>
-                        {% endfor %}
+                        <input type="radio" class="btn-check" name="tipo_aplicacion" 
+                               id="tipo_pretest" value="pretest" checked>
+                        <label class="btn btn-outline-info" for="tipo_pretest">
+                            <i data-feather="play" class="me-2"></i>Pretest
+                            <small class="d-block">Antes de enseñar</small>
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="tipo_aplicacion" 
+                               id="tipo_postest" value="postest">
+                        <label class="btn btn-outline-success" for="tipo_postest">
+                            <i data-feather="check" class="me-2"></i>Postest
+                            <small class="d-block">Después de enseñar</small>
+                        </label>
                     </div>
                     
                     <div class="mt-3 small text-muted">
                         <i data-feather="alert-circle" class="me-1"></i>
-                        Recuerda: El <strong>Pretest</strong> debe subirse antes que el <strong>Postest</strong>
+                        Recuerda: Sube primero todos los <strong>Pretest</strong>, luego los <strong>Postest</strong>
                     </div>
                 {% else %}
                     <div class="alert alert-warning">
@@ -182,6 +192,7 @@
                                           data-estudiante="{{ estudiante.id }}">
                                         <input type="hidden" name="estudiante_id" value="{{ estudiante.id }}">
                                         <input type="hidden" name="examen_id" class="examen-id-input" value="{{ examenes[0].id if examenes else '' }}">
+                                        <input type="hidden" name="tipo_aplicacion" class="tipo-aplicacion-input" value="pretest">
                                         
                                         <div class="mb-3">
                                             <label class="form-label">
@@ -213,21 +224,22 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Handle exam type selection
-    const examRadios = document.querySelectorAll('input[name="examen_tipo"]');
+    // Handle tipo aplicacion selection
+    const tipoRadios = document.querySelectorAll('input[name="tipo_aplicacion"]');
     const examTypeText = document.getElementById('exam-type-text');
     const examenIdInputs = document.querySelectorAll('.examen-id-input');
+    const tipoAplicacionInputs = document.querySelectorAll('.tipo-aplicacion-input');
     
-    examRadios.forEach(radio => {
+    tipoRadios.forEach(radio => {
         radio.addEventListener('change', function() {
             if (this.checked) {
-                const label = document.querySelector(`label[for="${this.id}"]`);
-                const examType = label.textContent.trim();
-                examTypeText.textContent = examType;
+                const tipoValue = this.value;
+                const tipoText = tipoValue === 'pretest' ? 'Pretest' : 'Postest';
+                examTypeText.textContent = tipoText;
                 
-                // Update all form inputs with selected exam ID
-                examenIdInputs.forEach(input => {
-                    input.value = this.value;
+                // Update all form inputs with selected tipo
+                tipoAplicacionInputs.forEach(input => {
+                    input.value = tipoValue;
                 });
             }
         });
@@ -251,8 +263,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to update student status
     function updateStudentStatus() {
-        const selectedExamId = document.querySelector('input[name="examen_tipo"]:checked')?.value;
-        if (!selectedExamId) return;
+        const selectedTipo = document.querySelector('input[name="tipo_aplicacion"]:checked')?.value;
+        if (!selectedTipo) return;
         
         // This would typically fetch from server, but for now we'll simulate
         document.querySelectorAll('.upload-form').forEach(form => {
@@ -286,8 +298,8 @@ document.addEventListener('DOMContentLoaded', function() {
         feather.replace();
     }
     
-    // Update status when exam type changes
-    examRadios.forEach(radio => {
+    // Update status when tipo changes
+    tipoRadios.forEach(radio => {
         radio.addEventListener('change', updateStudentStatus);
     });
     

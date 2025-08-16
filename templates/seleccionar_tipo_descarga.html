@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Seleccionar Tipo de Descarga - MEDUCA{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ver_curso', curso_id=curso.id) }}">{{ curso.nombre }}</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ver_clase', clase_id=clase.id) }}">{{ clase.nombre }}</a></li>
+                <li class="breadcrumb-item active">Descargar Examen</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h3 mb-0">
+                    <i data-feather="download" class="me-2"></i>Descargar Examen
+                </h1>
+                <p class="text-muted">{{ clase.nombre }} - {{ competencia.nombre if competencia else 'Competencia no definida' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="file-text" class="me-2"></i>Selecciona el Tipo de Examen a Descargar
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i data-feather="info" class="me-2"></i>
+                    <strong>Examen Unificado</strong><br>
+                    Este es el mismo examen que servirá tanto para pretest como postest. Selecciona el tipo según el momento en que planeas aplicarlo.
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100 border-info">
+                            <div class="card-body text-center">
+                                <div class="bg-info rounded-circle p-3 mx-auto mb-3" style="width: 60px; height: 60px;">
+                                    <i data-feather="play" class="text-white" style="width: 24px; height: 24px;"></i>
+                                </div>
+                                <h5 class="card-title">Pretest</h5>
+                                <p class="card-text text-muted">
+                                    Para aplicar ANTES de enseñar la competencia. 
+                                    Evalúa conocimientos previos de los estudiantes.
+                                </p>
+                                <a href="{{ url_for('descargar_examen', examen_id=examen.id, tipo_descarga='pretest') }}" 
+                                   class="btn btn-info">
+                                    <i data-feather="download" class="me-2"></i>Descargar Pretest
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="card h-100 border-success">
+                            <div class="card-body text-center">
+                                <div class="bg-success rounded-circle p-3 mx-auto mb-3" style="width: 60px; height: 60px;">
+                                    <i data-feather="check" class="text-white" style="width: 24px; height: 24px;"></i>
+                                </div>
+                                <h5 class="card-title">Postest</h5>
+                                <p class="card-text text-muted">
+                                    Para aplicar DESPUÉS de enseñar la competencia. 
+                                    Evalúa el aprendizaje obtenido por los estudiantes.
+                                </p>
+                                <a href="{{ url_for('descargar_examen', examen_id=examen.id, tipo_descarga='postest') }}" 
+                                   class="btn btn-success">
+                                    <i data-feather="download" class="me-2"></i>Descargar Postest
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h6>Recomendaciones:</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i data-feather="check-circle" class="text-success me-2"></i>
+                            Aplica primero el <strong>pretest</strong> para conocer el nivel inicial
+                        </li>
+                        <li class="mb-2">
+                            <i data-feather="check-circle" class="text-success me-2"></i>
+                            Enseña la competencia durante varias clases
+                        </li>
+                        <li class="mb-2">
+                            <i data-feather="check-circle" class="text-success me-2"></i>
+                            Aplica el <strong>postest</strong> para medir el progreso obtenido
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('ver_clase', clase_id=clase.id) }}" class="btn btn-secondary">
+                        <i data-feather="arrow-left" class="me-2"></i>Volver
+                    </a>
+                    <small class="text-muted align-self-center">
+                        El contenido del examen es idéntico para ambos tipos
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Replace feather icons
+    feather.replace();
+});
+</script>
+{% endblock %}

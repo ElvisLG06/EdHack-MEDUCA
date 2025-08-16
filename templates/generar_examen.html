@@ -115,19 +115,10 @@
                     <input type="hidden" id="criterios-input" name="criterios">
                     <input type="hidden" id="preguntas-input" name="preguntas">
                     
-                    <div class="mb-4">
-                        <label for="tipo" class="form-label">
-                            <i data-feather="tag" class="me-2"></i>Tipo de Examen
-                        </label>
-                        <select class="form-select" name="tipo" required>
-                            <option value="">Selecciona el tipo</option>
-                            <option value="pretest">Pretest - Antes de enseñar la competencia</option>
-                            <option value="postest">Postest - Después de enseñar la competencia</option>
-                        </select>
-                        <div class="form-text">
-                            <i data-feather="info" class="me-1"></i>
-                            El pretest debe aplicarse antes del postest para medir el progreso
-                        </div>
+                    <div class="alert alert-info">
+                        <i data-feather="info" class="me-2"></i>
+                        <strong>Examen Unificado</strong><br>
+                        Este examen servirá tanto para pretest como postest. La diferenciación se hará al momento de descargar el PDF o subir los exámenes resueltos.
                     </div>
                     
                     <div class="alert alert-success">
@@ -137,7 +128,7 @@
                     </div>
                     
                     <button type="submit" class="btn btn-success">
-                        <i data-feather="download" class="me-2"></i>Crear y Descargar Examen PDF
+                        <i data-feather="file-plus" class="me-2"></i>Crear Examen Unificado
                     </button>
                 </form>
             </div>

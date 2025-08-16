@@ -242,7 +242,7 @@ def generar_preguntas():
 @docente_required
 def crear_examen():
     clase_id = request.form['clase_id']
-    tipo = request.form['tipo']
+    tipo = 'unificado'  # Examen unificado para pre y post test
     criterios = request.form.getlist('criterios')
     preguntas_json = request.form.getlist('preguntas')
     
@@ -299,8 +299,9 @@ def ver_clase(clase_id):
                          examenes=examenes)
 
 @app.route('/descargar_examen/<examen_id>')
+@app.route('/descargar_examen/<examen_id>/<tipo_descarga>')
 @login_required
-def descargar_examen(examen_id):
+def descargar_examen(examen_id, tipo_descarga=None):
     examen = data_store.get_examen(examen_id)
     if not examen:
         flash('Examen no encontrado', 'error')
@@ -317,9 +318,19 @@ def descargar_examen(examen_id):
     competencias = COMPETENCIAS_MATEMATICAS.get(curso.grado, [])
     competencia = next((c for c in competencias if c['id'] == clase.competencia_id), None)
     
+    # Si no se especifica tipo_descarga, mostrar selector
+    if not tipo_descarga:
+        return render_template('seleccionar_tipo_descarga.html', 
+                             examen=examen, 
+                             clase=clase, 
+                             curso=curso, 
+                             competencia=competencia)
+    
     try:
-        pdf_path = pdf_generator.generar_examen_pdf(examen, clase, curso, competencia)
-        return send_file(pdf_path, as_attachment=True, download_name=f'examen_{examen.tipo}_{clase.nombre}.pdf')
+        # Usar el tipo especificado para la descarga
+        pdf_path = pdf_generator.generar_examen_pdf(examen, clase, curso, competencia, tipo_descarga)
+        filename = f'examen_{tipo_descarga}_{clase.nombre.replace(" ", "_")}.pdf'
+        return send_file(pdf_path, as_attachment=True, download_name=filename)
     except Exception as e:
         logging.error(f"Error generando PDF: {e}")
         flash('Error al generar el PDF del examen', 'error')
@@ -353,6 +364,7 @@ def subir_examenes(clase_id):
 def subir_examen_resuelto():
     examen_id = request.form['examen_id']
     estudiante_id = request.form['estudiante_id']
+    tipo_aplicacion = request.form.get('tipo_aplicacion', 'pretest')  # pretest o postest
     
     # Verificar permisos - docentes pueden subir para cualquier estudiante, estudiantes solo para sí mismos
     user = data_store.get_user(session['user_id'])
@@ -390,20 +402,20 @@ def subir_examen_resuelto():
                 flash('Examen no encontrado', 'error')
                 return redirect(request.referrer or url_for('dashboard'))
             
-            # Analizar la imagen con IA
+            # Analizar la imagen con IA usando el tipo de aplicación
             try:
-                if examen.tipo == 'pretest':
+                if tipo_aplicacion == 'pretest':
                     # Para pretest, solo análisis básico
                     resultado_analisis = gemini_service.analizar_examen_imagen(filepath, examen.preguntas, 'pretest')
                 else:
                     # Para postest, análisis completo con comparación
-                    pretest_examen = next((e for e in data_store.examenes.values() 
-                                         if e.clase_id == examen.clase_id and e.tipo == 'pretest'), None)
+                    # Buscar el pretest del mismo estudiante y examen unificado
                     pretest_resultado = None
-                    if pretest_examen:
-                        pretest_resuelto = data_store.get_examen_resuelto_by_estudiante_examen(estudiante_id, pretest_examen.id)
-                        if pretest_resuelto and hasattr(pretest_resuelto, 'analisis_ia'):
-                            pretest_resultado = pretest_resuelto.analisis_ia
+                    pretest_resuelto = next((er for er in data_store.examenes_resueltos.values() 
+                                           if er.examen_id == examen_id and er.estudiante_id == estudiante_id 
+                                           and hasattr(er, 'tipo_aplicacion') and er.tipo_aplicacion == 'pretest'), None)
+                    if pretest_resuelto and hasattr(pretest_resuelto, 'analisis_ia'):
+                        pretest_resultado = pretest_resuelto.analisis_ia
                     
                     resultado_analisis = gemini_service.procesar_examen_postest(filepath, examen.preguntas, pretest_resultado)
                 
@@ -421,11 +433,12 @@ def subir_examen_resuelto():
                 existing.estado = "completado"
                 existing.calificacion = calificacion
                 existing.analisis_ia = resultado_analisis
+                existing.tipo_aplicacion = tipo_aplicacion
                 flash('Imagen del examen actualizada y analizada exitosamente', 'success')
             else:
                 # Crear nuevo registro de examen resuelto
                 resuelto_id = str(uuid.uuid4())
-                examen_resuelto = ExamenResuelto(resuelto_id, examen_id, estudiante_id, filename, {})
+                examen_resuelto = ExamenResuelto(resuelto_id, examen_id, estudiante_id, filename, {}, None, tipo_aplicacion)
                 examen_resuelto.estado = "completado"
                 examen_resuelto.calificacion = calificacion
                 examen_resuelto.analisis_ia = resultado_analisis

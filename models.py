@@ -37,13 +37,14 @@ class Examen:
         self.created_at = datetime.now()
 
 class ExamenResuelto:
-    def __init__(self, resuelto_id: str, examen_id: str, estudiante_id: str, imagen_path: str, respuestas: Dict, calificacion: Optional[float] = None):
+    def __init__(self, resuelto_id: str, examen_id: str, estudiante_id: str, imagen_path: str, respuestas: Dict, calificacion: Optional[float] = None, tipo_aplicacion: str = 'pretest'):
         self.id = resuelto_id
         self.examen_id = examen_id
         self.estudiante_id = estudiante_id
         self.imagen_path = imagen_path
         self.respuestas = respuestas
         self.calificacion = calificacion
+        self.tipo_aplicacion = tipo_aplicacion  # 'pretest' o 'postest'
         self.feedback = None
         self.estado = "pendiente"  # "pendiente", "completado", "procesando"
         self.analisis_ia = None  # Resultados del análisis de IA

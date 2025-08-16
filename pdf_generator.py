@@ -12,7 +12,7 @@ class PDFGenerator:
     def __init__(self):
         self.styles = getSampleStyleSheet()
     
-    def generar_examen_pdf(self, examen: Examen, clase: Clase, curso: Curso, competencia) -> str:
+    def generar_examen_pdf(self, examen: Examen, clase: Clase, curso: Curso, competencia, tipo_examen: str = None) -> str:
         """Genera un PDF imprimible del examen - Máximo 2 páginas"""
         # Crear archivo temporal
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
@@ -28,7 +28,9 @@ class PDFGenerator:
         
         # Título del examen
         title_style = self.styles['Title']
-        title = Paragraph(f"EXAMEN DE MATEMÁTICAS - {examen.tipo.upper()}", title_style)
+        # Usar el tipo especificado o el tipo del examen
+        tipo_display = tipo_examen.upper() if tipo_examen else examen.tipo.upper()
+        title = Paragraph(f"EXAMEN DE MATEMÁTICAS - {tipo_display}", title_style)
         story.append(title)
         story.append(Spacer(1, 0.2*inch))
         

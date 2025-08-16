@@ -43,6 +43,32 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--meduca-text) !important;
 }
 
+/* Force dark text in all contexts */
+p, span, div, label, small {
+    color: var(--meduca-text) !important;
+}
+
+/* Ensure form labels and text are visible */
+.form-label, .form-text {
+    color: var(--meduca-text) !important;
+}
+
+/* Breadcrumb text */
+.breadcrumb-item, .breadcrumb-item a {
+    color: var(--meduca-text) !important;
+}
+
+/* Card titles and content */
+.card-title, .card-subtitle {
+    color: var(--meduca-text) !important;
+}
+
+/* List group items */
+.list-group-item {
+    color: var(--meduca-text) !important;
+    background-color: var(--meduca-light) !important;
+}
+
 /* Navigation Enhancements */
 .navbar {
     background-color: var(--meduca-light) !important;
@@ -112,21 +138,24 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: var(--meduca-border-radius);
     border: 1px solid rgba(var(--bs-border-color-rgb), 0.3);
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    color: var(--meduca-text) !important;
+    background-color: var(--meduca-light) !important;
 }
 
 .form-control:focus, .form-select:focus {
     border-color: var(--bs-primary);
     box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+    color: var(--meduca-text) !important;
 }
 
 .form-label {
     font-weight: 600;
-    color: var(--bs-body-color);
+    color: var(--meduca-text) !important;
     margin-bottom: 0.5rem;
 }
 
 .form-text {
-    color: var(--bs-secondary);
+    color: var(--meduca-text-muted) !important;
     font-size: 0.875rem;
 }
 
@@ -167,6 +196,11 @@ h1, h2, h3, h4, h5, h6 {
 /* Table Enhancements */
 .table {
     --bs-table-bg: transparent;
+    color: var(--meduca-text) !important;
+}
+
+.table td, .table th {
+    color: var(--meduca-text) !important;
 }
 
 .table-hover > tbody > tr:hover > td,
@@ -176,7 +210,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .table th {
     font-weight: 600;
-    color: var(--bs-primary);
+    color: var(--bs-primary) !important;
     border-top: none;
 }
 
