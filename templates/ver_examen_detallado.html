@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Examen Detallado - {{ estudiante.username }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i data-feather="file-text" class="me-2"></i>
+                        Examen Detallado
+                    </h2>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('ver_curso', curso_id=curso.id) }}">{{ curso.nombre }}</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('ver_clase', clase_id=clase.id) }}">{{ clase.nombre }}</a>
+                            </li>
+                            <li class="breadcrumb-item active">Examen Detallado</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div class="text-end">
+                    <a href="{{ url_for('ver_examenes_subidos', clase_id=clase.id) }}" class="btn btn-outline-secondary">
+                        <i data-feather="arrow-left" class="me-2"></i>Volver
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Info -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h5 class="card-title mb-2">
+                                <i data-feather="user" class="me-2"></i>
+                                Estudiante: {{ estudiante.username | title }}
+                            </h5>
+                            <p class="text-muted mb-0">{{ estudiante.email }}</p>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <div class="d-flex flex-column align-items-md-end">
+                                <span class="badge bg-primary mb-1">
+                                    {{ examen_resuelto.tipo_aplicacion | upper }}
+                                </span>
+                                <div class="h4 text-success mb-0">
+                                    {{ examen_resuelto.calificacion }}/20
+                                </div>
+                                <small class="text-muted">
+                                    Subido: {{ examen_resuelto.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row">
+        <!-- Left Column - Exam Image -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i data-feather="image" class="me-2"></i>
+                        Examen Resuelto
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if examen_resuelto.imagen_path %}
+                        <div class="text-center">
+                            <img src="{{ url_for('static', filename='uploads/' + examen_resuelto.imagen_path.split('/')[-1]) }}" 
+                                 class="img-fluid border rounded" 
+                                 alt="Examen resuelto"
+                                 style="max-height: 80vh; object-fit: contain;">
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i data-feather="image" class="text-muted mb-3" style="width: 64px; height: 64px;"></i>
+                            <h5 class="text-muted">No hay imagen disponible</h5>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column - Comments and Feedback -->
+        <div class="col-lg-4">
+            <!-- AI Analysis -->
+            {% if examen_resuelto.analisis_ia %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i data-feather="cpu" class="me-2"></i>
+                        Análisis de IA
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <!-- General Observations -->
+                    {% if examen_resuelto.analisis_ia.observaciones_generales %}
+                    <div class="mb-3">
+                        <strong>Observaciones Generales:</strong>
+                        <p class="mb-0">{{ examen_resuelto.analisis_ia.observaciones_generales }}</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Question Analysis -->
+                    {% if examen_resuelto.analisis_ia.respuestas_detectadas %}
+                    <div class="mb-3">
+                        <strong>Análisis por Pregunta:</strong>
+                        <div class="mt-2">
+                            {% for respuesta in examen_resuelto.analisis_ia.respuestas_detectadas %}
+                            <div class="d-flex align-items-start mb-2">
+                                <div class="me-2">
+                                    <i data-feather="{% if respuesta.es_correcta %}check-circle{% else %}x-circle{% endif %}" 
+                                       class="mt-1" 
+                                       style="color: {% if respuesta.es_correcta %}#198754{% else %}#dc3545{% endif %}; width: 16px; height: 16px;"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <small class="text-muted">Pregunta {{ respuesta.pregunta }}</small>
+                                    <div class="fw-bold">{{ respuesta.respuesta_estudiante }}</div>
+                                    <small class="text-muted">{{ respuesta.justificacion }}</small>
+                                    <span class="badge {% if respuesta.es_correcta %}bg-success{% else %}bg-danger{% endif %} ms-2">
+                                        {{ respuesta.puntos }}/10
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- AI Feedback -->
+                    {% if examen_resuelto.analisis_ia.feedback %}
+                    <div class="mb-3">
+                        <strong>Feedback de IA:</strong>
+                        <div class="alert alert-info mt-2">
+                            <i data-feather="message-circle" class="me-2"></i>
+                            {{ examen_resuelto.analisis_ia.feedback.explicacion }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Teacher Comments -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i data-feather="user-check" class="me-2"></i>
+                        Comentarios del Docente
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if user.role == 'docente' %}
+                        <!-- Form for teacher to add comments -->
+                        <form id="comentarios-form" class="mb-3">
+                            <div class="mb-3">
+                                <label class="form-label">Comentarios:</label>
+                                <textarea class="form-control" name="comentarios" rows="4" 
+                                          placeholder="Agrega comentarios específicos para este examen...">{{ examen_resuelto.comentarios_docente or '' }}</textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Puntos de mejora:</label>
+                                <textarea class="form-control" name="puntos_mejora" rows="3" 
+                                          placeholder="Sugiere puntos específicos de mejora...">{{ examen_resuelto.puntos_mejora or '' }}</textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                <i data-feather="save" class="me-2"></i>Guardar Comentarios
+                            </button>
+                        </form>
+                    {% else %}
+                        <!-- Display existing comments -->
+                        {% if examen_resuelto.comentarios_docente %}
+                        <div class="mb-3">
+                            <strong>Comentarios:</strong>
+                            <div class="alert alert-info mt-2">
+                                <i data-feather="user-check" class="me-2"></i>
+                                {{ examen_resuelto.comentarios_docente }}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if examen_resuelto.puntos_mejora %}
+                        <div class="mb-3">
+                            <strong>Puntos de mejora:</strong>
+                            <div class="alert alert-warning mt-2">
+                                <i data-feather="target" class="me-2"></i>
+                                {{ examen_resuelto.puntos_mejora }}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        {% if not examen_resuelto.comentarios_docente and not examen_resuelto.puntos_mejora %}
+                        <div class="text-center py-3">
+                            <i data-feather="message-square" class="text-muted mb-2" style="width: 32px; height: 32px;"></i>
+                            <p class="text-muted mb-0">No hay comentarios del docente aún</p>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Exam Info -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i data-feather="info" class="me-2"></i>
+                        Información del Examen
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Tipo:</small>
+                            <div class="fw-bold">{{ examen.tipo | title }}</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted">Estado:</small>
+                            <div class="fw-bold">
+                                <span class="badge {% if examen_resuelto.estado == 'completado' %}bg-success{% elif examen_resuelto.estado == 'procesando' %}bg-warning{% else %}bg-secondary{% endif %}">
+                                    {{ examen_resuelto.estado | title }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <small class="text-muted">Competencia:</small>
+                            <div class="fw-bold">{{ competencias_matematicas.get(examen.competencia_id, 'N/A') }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle teacher comments form
+    const comentariosForm = document.getElementById('comentarios-form');
+    if (comentariosForm) {
+        comentariosForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch('{{ url_for("agregar_comentarios_docente", examen_resuelto_id=examen_resuelto.id) }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-success alert-dismissible fade show';
+                    alert.innerHTML = `
+                        <i data-feather="check-circle" class="me-2"></i>
+                        Comentarios guardados exitosamente
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    
+                    const cardBody = comentariosForm.closest('.card-body');
+                    cardBody.insertBefore(alert, comentariosForm);
+                    
+                    // Reinitialize Feather icons
+                    if (typeof feather !== 'undefined') {
+                        feather.replace();
+                    }
+                    
+                    // Auto-dismiss after 3 seconds
+                    setTimeout(() => {
+                        alert.remove();
+                    }, 3000);
+                } else {
+                    alert('Error al guardar los comentarios');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al guardar los comentarios');
+            });
+        });
+    }
+});
+</script>
+{% endblock %}

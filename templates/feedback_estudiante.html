@@ -113,6 +113,12 @@
                         No se encontró la imagen del examen resuelto
                     </div>
                 {% endif %}
+                {% else %}
+                    <div class="alert alert-warning text-center">
+                        <i data-feather="image" class="me-2"></i>
+                        No se encontró la imagen del examen resuelto
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -153,12 +159,23 @@
                                     <strong>Tu Respuesta:</strong>
                                     {% if examen_resuelto.analisis_ia and examen_resuelto.analisis_ia.respuestas_detectadas %}
                                         {% set respuesta_estudiante = examen_resuelto.analisis_ia.respuestas_detectadas[loop.index0] %}
-                                        <div class="alert {% if respuesta_estudiante.es_correcta %}alert-success{% else %}alert-warning{% endif %} mt-2">
-                                            <i data-feather="{% if respuesta_estudiante.es_correcta %}check{% else %}x{% endif %}" class="me-2"></i>
-                                            <strong>{{ respuesta_estudiante.respuesta_estudiante }}</strong>
-                                            <br><small class="text-muted">
-                                                {{ respuesta_estudiante.justificacion }} ({{ respuesta_estudiante.puntos }}/10 puntos)
-                                            </small>
+                                        <div class="alert {% if respuesta_estudiante.es_correcta %}alert-success{% else %}alert-danger{% endif %} mt-2">
+                                            <div class="d-flex align-items-start">
+                                                <i data-feather="{% if respuesta_estudiante.es_correcta %}check-circle{% else %}x-circle{% endif %}" 
+                                                   class="me-2 mt-1" 
+                                                   style="color: {% if respuesta_estudiante.es_correcta %}#198754{% else %}#dc3545{% endif %};"></i>
+                                                <div>
+                                                    <strong style="color: {% if respuesta_estudiante.es_correcta %}#198754{% else %}#dc3545{% endif %};">
+                                                        {{ respuesta_estudiante.respuesta_estudiante }}
+                                                    </strong>
+                                                    <br><small class="text-muted">
+                                                        {{ respuesta_estudiante.justificacion }} 
+                                                        <span class="badge {% if respuesta_estudiante.es_correcta %}bg-success{% else %}bg-danger{% endif %}">
+                                                            {{ respuesta_estudiante.puntos }}/10 puntos
+                                                        </span>
+                                                    </small>
+                                                </div>
+                                            </div>
                                         </div>
                                     {% else %}
                                         <div class="alert alert-light mt-2">
@@ -196,10 +213,39 @@
                                     <!-- Teacher's Additional Comments -->
                                     <div class="mt-3">
                                         <strong>Comentarios del Docente:</strong>
-                                        <div class="alert alert-secondary mt-2">
-                                            <i data-feather="user-check" class="me-2"></i>
-                                            <em>El docente puede agregar comentarios adicionales aquí.</em>
-                                        </div>
+                                        {% if user.role == 'docente' %}
+                                            <!-- Form for teacher to add comments -->
+                                            <form id="comentarios-form-{{ loop.index }}" class="mt-2">
+                                                <div class="mb-3">
+                                                    <textarea class="form-control" name="comentarios" rows="3" 
+                                                              placeholder="Agrega comentarios específicos para esta pregunta...">{{ examen_resuelto.comentarios_docente or '' }}</textarea>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Puntos de mejora:</label>
+                                                    <textarea class="form-control" name="puntos_mejora" rows="2" 
+                                                              placeholder="Sugiere puntos específicos de mejora...">{{ examen_resuelto.puntos_mejora or '' }}</textarea>
+                                                </div>
+                                                <button type="submit" class="btn btn-primary btn-sm">
+                                                    <i data-feather="save" class="me-2"></i>Guardar Comentarios
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <!-- Display existing comments for students -->
+                                            {% if examen_resuelto.comentarios_docente %}
+                                                <div class="alert alert-info mt-2">
+                                                    <i data-feather="user-check" class="me-2"></i>
+                                                    <strong>Comentarios del docente:</strong>
+                                                    <div class="mt-2">{{ examen_resuelto.comentarios_docente }}</div>
+                                                </div>
+                                            {% endif %}
+                                            {% if examen_resuelto.puntos_mejora %}
+                                                <div class="alert alert-warning mt-2">
+                                                    <i data-feather="target" class="me-2"></i>
+                                                    <strong>Puntos de mejora:</strong>
+                                                    <div class="mt-2">{{ examen_resuelto.puntos_mejora }}</div>
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
                                     </div>
                                 </div>
                                 {% else %}
@@ -329,9 +375,45 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Future: Add functionality for interactive feedback
-    // This could include expanding/collapsing sections, 
-    // marking questions as understood, requesting additional help, etc.
+    // Handle teacher comments form submission
+    const comentariosForms = document.querySelectorAll('[id^="comentarios-form-"]');
+    
+    comentariosForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const examenResueltoId = '{{ examen_resuelto.id }}';
+            
+            fetch(`/agregar_comentarios_docente/${examenResueltoId}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    const button = this.querySelector('button[type="submit"]');
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '<i data-feather="check" class="me-2"></i>Guardado';
+                    button.classList.remove('btn-primary');
+                    button.classList.add('btn-success');
+                    
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.classList.remove('btn-success');
+                        button.classList.add('btn-primary');
+                    }, 2000);
+                } else {
+                    alert('Error al guardar comentarios: ' + (data.error || 'Error desconocido'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error de conexión al guardar comentarios');
+            });
+        });
+    });
     
     console.log('Feedback page loaded for exam:', '{{ examen_resuelto.id }}');
 });

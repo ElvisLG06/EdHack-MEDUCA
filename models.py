@@ -48,6 +48,8 @@ class ExamenResuelto:
         self.feedback = None
         self.estado = "pendiente"  # "pendiente", "completado", "procesando"
         self.analisis_ia = None  # Resultados del análisis de IA
+        self.comentarios_docente = None  # Comentarios adicionales del docente
+        self.puntos_mejora = None  # Puntos de mejora sugeridos por el docente
         self.created_at = datetime.now()
 
 class Inscripcion:

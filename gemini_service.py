@@ -5,12 +5,21 @@ from typing import List, Dict
 from google import genai
 from google.genai import types
 import base64
+from config import Config
 
 class GeminiService:
     def __init__(self):
-        api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY", "default_key")
-        self.client = genai.Client(api_key=api_key)
-        self.model = "gemini-2.5-flash"
+        # Configuración de API key desde config.py
+        api_key = Config.GEMINI_API_KEY
+        if not api_key or api_key == 'TU_API_KEY_AQUI':
+            logging.warning("⚠️  API key de Gemini no configurada. Usando modo de prueba.")
+            # En modo de prueba, usamos respuestas predefinidas
+            self.client = None
+            self.model = "gemini-2.5-flash"
+        else:
+            logging.info("✅ API key de Gemini configurada correctamente")
+            self.client = genai.Client(api_key=api_key)
+            self.model = "gemini-2.5-flash"
     
     def generar_criterios_evaluacion(self, competencia: str, grado: str) -> List[str]:
         """Genera exactamente 4 criterios de evaluación para una competencia matemática específica"""
@@ -28,6 +37,16 @@ class GeminiService:
         
         Responde ÚNICAMENTE con una lista de exactamente 4 criterios, uno por línea, sin numeración ni viñetas.
         """
+        
+        # Modo de prueba si no hay API key configurada
+        if not self.client:
+            logging.info("Usando modo de prueba para criterios de evaluación")
+            return [
+                f"Comprende y aplica los conceptos de {competencia} correctamente",
+                f"Utiliza estrategias de resolución apropiadas para {grado}° grado",
+                "Ejecuta los procedimientos matemáticos sin errores",
+                "Presenta la respuesta de forma clara y justifica el proceso"
+            ]
         
         try:
             response = self.client.models.generate_content(
@@ -91,6 +110,37 @@ class GeminiService:
             ...
         ]
         """
+        
+        # Modo de prueba si no hay API key configurada
+        if not self.client:
+            logging.info("Usando modo de prueba para preguntas del examen")
+            return [
+                {
+                    "numero": 1,
+                    "enunciado": f"Resuelve un problema relacionado con: {competencia}",
+                    "respuesta_correcta": "Variable según el contexto"
+                },
+                {
+                    "numero": 2,
+                    "enunciado": f"Aplica estrategias para resolver: {competencia}",
+                    "respuesta_correcta": "Variable según el contexto"
+                },
+                {
+                    "numero": 3,
+                    "enunciado": f"Demuestra tu comprensión de: {competencia}",
+                    "respuesta_correcta": "Variable según el contexto"
+                },
+                {
+                    "numero": 4,
+                    "enunciado": f"Explica tu proceso al trabajar con: {competencia}",
+                    "respuesta_correcta": "Variable según el contexto"
+                },
+                {
+                    "numero": 5,
+                    "enunciado": f"Comunica tu solución para: {competencia}",
+                    "respuesta_correcta": "Variable según el contexto"
+                }
+            ]
         
         try:
             response = self.client.models.generate_content(
@@ -162,15 +212,17 @@ class GeminiService:
         1. Una explicación paso a paso de cómo resolver el problema
         2. Sugerencias de recursos educativos (videos de YouTube, sitios web educativos)
         3. Ejercicios similares para practicar
+        4. Puntos de mejora específicos para el estudiante
         
         Responde en formato JSON:
         {{
-            "explicacion": "explicación paso a paso",
+            "explicacion": "explicación paso a paso detallada",
             "recursos": [
-                {{"tipo": "video", "titulo": "título del video", "descripcion": "descripción breve"}},
-                {{"tipo": "articulo", "titulo": "título del artículo", "descripcion": "descripción breve"}}
+                {{"tipo": "video", "titulo": "título del video", "url": "https://youtube.com/...", "descripcion": "descripción breve"}},
+                {{"tipo": "articulo", "titulo": "título del artículo", "url": "https://...", "descripcion": "descripción breve"}}
             ],
-            "ejercicios_similares": ["ejercicio 1", "ejercicio 2", "ejercicio 3"]
+            "ejercicios_similares": ["ejercicio 1", "ejercicio 2", "ejercicio 3"],
+            "puntos_mejora": ["punto 1", "punto 2", "punto 3"]
         }}
         """
         

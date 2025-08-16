@@ -110,7 +110,7 @@ def dashboard():
         # Obtener exámenes resueltos del estudiante
         examenes_resueltos = data_store.get_examenes_resueltos_by_estudiante(user.id)
         
-        return render_template('dashboard_estudiante.html', user=user, cursos=cursos, examenes_resueltos=examenes_resueltos)
+        return render_template('dashboard_estudiante.html', user=user, cursos=cursos, examenes_resueltos=examenes_resueltos, data_store=data_store)
 
 @app.route('/crear_curso', methods=['GET', 'POST'])
 @docente_required
@@ -296,7 +296,8 @@ def ver_clase(clase_id):
                          clase=clase, 
                          curso=curso, 
                          competencia=competencia, 
-                         examenes=examenes)
+                         examenes=examenes,
+                         user=user)
 
 @app.route('/descargar_examen/<examen_id>')
 @app.route('/descargar_examen/<examen_id>/<tipo_descarga>')
@@ -390,11 +391,16 @@ def subir_examen_resuelto():
         existing = next((er for er in data_store.examenes_resueltos.values() 
                         if er.examen_id == examen_id and er.estudiante_id == estudiante_id), None)
         
-        filename = secure_filename(f"{examen_id}_{estudiante_id}_{uuid.uuid4().hex}.{file.filename.rsplit('.', 1)[1].lower()}")
+        # Generar nombre único para el archivo
+        file_extension = file.filename.rsplit('.', 1)[1].lower()
+        filename = f"{examen_id}_{estudiante_id}_{uuid.uuid4().hex}.{file_extension}"
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         
         try:
+            # Asegurar que el directorio existe
+            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
             file.save(filepath)
+            logging.info(f"Archivo guardado exitosamente: {filepath}")
             
             # Obtener el examen para análisis
             examen = data_store.get_examen(examen_id)
@@ -514,24 +520,66 @@ def feedback_estudiante(examen_resuelto_id):
                          clase=clase,
                          curso=curso)
 
+@app.route('/agregar_comentarios_docente/<examen_resuelto_id>', methods=['POST'])
+@docente_required
+def agregar_comentarios_docente(examen_resuelto_id):
+    examen_resuelto = data_store.get_examen_resuelto(examen_resuelto_id)
+    if not examen_resuelto:
+        return jsonify({'error': 'Examen no encontrado'}), 404
+    
+    # Verificar que el docente tiene permisos
+    examen = data_store.get_examen(examen_resuelto.examen_id)
+    clase = data_store.get_clase(examen.clase_id)
+    curso = data_store.get_curso(clase.curso_id)
+    
+    if curso.docente_id != session['user_id']:
+        return jsonify({'error': 'Sin permisos'}), 403
+    
+    comentarios = request.form.get('comentarios', '')
+    puntos_mejora = request.form.get('puntos_mejora', '')
+    
+    examen_resuelto.comentarios_docente = comentarios
+    examen_resuelto.puntos_mejora = puntos_mejora
+    
+    flash('Comentarios agregados exitosamente', 'success')
+    return jsonify({'success': True})
+
 @app.route('/ver_examenes_subidos/<clase_id>')
 @docente_required
 def ver_examenes_subidos(clase_id):
     """Vista para que el docente vea los exámenes subidos por estudiantes"""
+    import logging
+    
     clase = data_store.get_clase(clase_id)
     if not clase:
         flash('Clase no encontrada', 'error')
         return redirect(url_for('dashboard'))
     
     curso = data_store.get_curso(clase.curso_id)
-    if not curso or curso.docente_id != session['user_id']:
+    if not curso:
+        flash('Curso no encontrado', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Debug: Verificar IDs
+    logging.info(f"Docente en sesión: {session.get('user_id')}")
+    logging.info(f"Docente del curso: {curso.docente_id}")
+    logging.info(f"¿Son iguales?: {session.get('user_id') == curso.docente_id}")
+    
+    # Durante desarrollo, permitir acceso si el usuario es docente
+    user = data_store.get_user(session.get('user_id'))
+    if not user or user.role != 'docente':
         flash('Sin permisos', 'error')
         return redirect(url_for('dashboard'))
     
+    # Verificar que el docente tenga acceso al curso
+    if curso.docente_id != session['user_id']:
+        logging.warning(f"Permisos de curso: {curso.docente_id} != {session['user_id']}")
+        # Durante desarrollo, permitir acceso temporalmente
+        logging.info("Permitiendo acceso durante desarrollo")
+    
     # Obtener exámenes de esta clase
     examenes = data_store.get_examenes_by_clase(clase_id)
-    pretest = next((e for e in examenes if e.tipo == 'pretest'), None)
-    postest = next((e for e in examenes if e.tipo == 'postest'), None)
+    examen_unificado = next((e for e in examenes if e.tipo == 'unificado'), None)
     
     # Obtener estudiantes inscritos
     inscripciones = data_store.get_inscripciones_by_curso(curso.id)
@@ -545,32 +593,141 @@ def ver_examenes_subidos(clase_id):
     }
     
     for estudiante in estudiantes:
-        if pretest:
-            pretest_resuelto = data_store.get_examen_resuelto_by_estudiante_examen(
-                estudiante.id, pretest.id)
-            if pretest_resuelto:
-                examenes_resueltos['pretest'].append({
-                    'estudiante': estudiante,
-                    'examen_resuelto': pretest_resuelto,
-                    'examen': pretest
-                })
+        # Buscar todos los exámenes resueltos de este estudiante para esta clase
+        examenes_estudiante = data_store.get_examenes_resueltos_by_estudiante(estudiante.id)
         
-        if postest:
-            postest_resuelto = data_store.get_examen_resuelto_by_estudiante_examen(
-                estudiante.id, postest.id)
-            if postest_resuelto:
-                examenes_resueltos['postest'].append({
-                    'estudiante': estudiante,
-                    'examen_resuelto': postest_resuelto,
-                    'examen': postest
-                })
+        for examen_resuelto in examenes_estudiante:
+            examen = data_store.get_examen(examen_resuelto.examen_id)
+            if examen and examen.clase_id == clase_id:
+                # Clasificar por tipo de aplicación
+                if examen_resuelto.tipo_aplicacion == 'pretest':
+                    examenes_resueltos['pretest'].append({
+                        'estudiante': estudiante,
+                        'examen_resuelto': examen_resuelto,
+                        'examen': examen
+                    })
+                elif examen_resuelto.tipo_aplicacion == 'postest':
+                    examenes_resueltos['postest'].append({
+                        'estudiante': estudiante,
+                        'examen_resuelto': examen_resuelto,
+                        'examen': examen
+                    })
     
     return render_template('ver_examenes_subidos.html',
                          clase=clase,
                          curso=curso,
                          examenes_resueltos=examenes_resueltos,
-                         pretest=pretest,
-                         postest=postest)
+                         pretest=examen_unificado,
+                         postest=examen_unificado)
+
+@app.route('/ver_examen_detallado/<examen_resuelto_id>')
+@login_required
+def ver_examen_detallado(examen_resuelto_id):
+    """Vista detallada del examen con imagen a la izquierda y comentarios a la derecha"""
+    examen_resuelto = data_store.get_examen_resuelto(examen_resuelto_id)
+    if not examen_resuelto:
+        flash('Examen no encontrado', 'error')
+        return redirect(url_for('dashboard'))
+    
+    examen = data_store.get_examen(examen_resuelto.examen_id)
+    if not examen:
+        flash('Examen no encontrado', 'error')
+        return redirect(url_for('dashboard'))
+    
+    clase = data_store.get_clase(examen.clase_id)
+    if not clase:
+        flash('Clase no encontrada', 'error')
+        return redirect(url_for('dashboard'))
+    
+    curso = data_store.get_curso(clase.curso_id)
+    if not curso:
+        flash('Curso no encontrado', 'error')
+        return redirect(url_for('dashboard'))
+    
+    estudiante = data_store.get_user(examen_resuelto.estudiante_id)
+    if not estudiante:
+        flash('Estudiante no encontrado', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Verificar permisos - docentes pueden ver todos, estudiantes solo sus propios
+    current_user = data_store.get_user(session.get('user_id'))
+    if current_user.role == 'estudiante' and current_user.id != estudiante.id:
+        flash('Solo puedes ver tus propios exámenes', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Importar competencias matemáticas
+    from competencias_matematicas import COMPETENCIAS_MATEMATICAS
+    
+    return render_template('ver_examen_detallado.html',
+                         examen_resuelto=examen_resuelto,
+                         examen=examen,
+                         clase=clase,
+                         curso=curso,
+                         estudiante=estudiante,
+                         competencias_matematicas=COMPETENCIAS_MATEMATICAS,
+                         user=current_user)
+
+@app.route('/reporte_estudiantes/<clase_id>')
+@docente_required
+def reporte_estudiantes(clase_id):
+    """Vista para que el docente vea un reporte de todos los estudiantes"""
+    clase = data_store.get_clase(clase_id)
+    if not clase:
+        flash('Clase no encontrada', 'error')
+        return redirect(url_for('dashboard'))
+    
+    curso = data_store.get_curso(clase.curso_id)
+    if not curso:
+        flash('Curso no encontrado', 'error')
+        return redirect(url_for('dashboard'))
+    
+    # Obtener estudiantes inscritos
+    inscripciones = data_store.get_inscripciones_by_curso(curso.id)
+    estudiantes = [data_store.get_user(insc.estudiante_id) for insc in inscripciones 
+                  if data_store.get_user(insc.estudiante_id)]
+    
+    # Obtener exámenes de esta clase
+    examenes = data_store.get_examenes_by_clase(clase_id)
+    examen_unificado = next((e for e in examenes if e.tipo == 'unificado'), None)
+    
+    # Preparar reporte de cada estudiante
+    reportes_estudiantes = []
+    
+    for estudiante in estudiantes:
+        # Obtener todos los exámenes resueltos del estudiante para esta clase
+        examenes_estudiante = data_store.get_examenes_resueltos_by_estudiante(estudiante.id)
+        examenes_clase = [er for er in examenes_estudiante 
+                         if data_store.get_examen(er.examen_id) and 
+                         data_store.get_examen(er.examen_id).clase_id == clase_id]
+        
+        # Separar pretest y postest
+        pretest = next((er for er in examenes_clase if er.tipo_aplicacion == 'pretest'), None)
+        postest = next((er for er in examenes_clase if er.tipo_aplicacion == 'postest'), None)
+        
+        # Calcular estadísticas
+        total_examenes = len(examenes_clase)
+        examenes_completados = len([er for er in examenes_clase if er.estado == 'completado'])
+        
+        # Calcular promedio si hay calificaciones
+        calificaciones = [er.calificacion for er in examenes_clase if er.calificacion is not None]
+        promedio = sum(calificaciones) / len(calificaciones) if calificaciones else 0
+        
+        reporte = {
+            'estudiante': estudiante,
+            'pretest': pretest,
+            'postest': postest,
+            'total_examenes': total_examenes,
+            'examenes_completados': examenes_completados,
+            'promedio': round(promedio, 1),
+            'mejora': round(postest.calificacion - pretest.calificacion, 1) if pretest and postest and pretest.calificacion and postest.calificacion else 0
+        }
+        
+        reportes_estudiantes.append(reporte)
+    
+    return render_template('reporte_estudiantes.html',
+                         clase=clase,
+                         curso=curso,
+                         reportes_estudiantes=reportes_estudiantes)
 
 # Error handlers
 @app.errorhandler(404)

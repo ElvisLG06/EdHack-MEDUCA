@@ -114,20 +114,10 @@
                                         {% endif %}
                                         
                                         <div class="d-grid gap-2">
-                                            <button type="button" class="btn btn-outline-primary btn-sm" 
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#imageModal"
-                                                    data-image="{{ item.examen_resuelto.imagen_path }}"
-                                                    data-student="{{ item.estudiante.username }}"
-                                                    data-type="Pretest">
-                                                <i data-feather="eye" class="me-2"></i>Ver Imagen
-                                            </button>
-                                            {% if item.examen.tipo == 'pretest' %}
-                                            <small class="text-info text-center">
-                                                <i data-feather="info" class="me-1"></i>
-                                                Pretest - Solo evaluación inicial
-                                            </small>
-                                            {% endif %}
+                                            <a href="{{ url_for('ver_examen_detallado', examen_resuelto_id=item.examen_resuelto.id) }}" 
+                                               class="btn btn-primary btn-sm">
+                                                <i data-feather="eye" class="me-2"></i>Ver Examen Detallado
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
@@ -194,17 +184,9 @@
                                         {% endif %}
                                         
                                         <div class="d-grid gap-2">
-                                            <button type="button" class="btn btn-outline-primary btn-sm" 
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#imageModal"
-                                                    data-image="{{ item.examen_resuelto.imagen_path }}"
-                                                    data-student="{{ item.estudiante.username }}"
-                                                    data-type="Postest">
-                                                <i data-feather="eye" class="me-2"></i>Ver Imagen
-                                            </button>
-                                            <a href="{{ url_for('feedback_estudiante', examen_resuelto_id=item.examen_resuelto.id) }}" 
-                                               class="btn btn-success btn-sm">
-                                                <i data-feather="message-circle" class="me-2"></i>Ver Feedback
+                                            <a href="{{ url_for('ver_examen_detallado', examen_resuelto_id=item.examen_resuelto.id) }}" 
+                                               class="btn btn-primary btn-sm">
+                                                <i data-feather="eye" class="me-2"></i>Ver Examen Detallado
                                             </a>
                                         </div>
                                     </div>
