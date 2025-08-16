@@ -13,16 +13,16 @@ class PDFGenerator:
         self.styles = getSampleStyleSheet()
     
     def generar_examen_pdf(self, examen: Examen, clase: Clase, curso: Curso, competencia) -> str:
-        """Genera un PDF imprimible del examen"""
+        """Genera un PDF imprimible del examen - Máximo 2 páginas"""
         # Crear archivo temporal
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
         temp_path = temp_file.name
         temp_file.close()
         
-        # Crear el documento PDF
+        # Crear el documento PDF - Máximo 2 páginas
         doc = SimpleDocTemplate(temp_path, pagesize=A4, 
-                               rightMargin=0.75*inch, leftMargin=0.75*inch,
-                               topMargin=0.75*inch, bottomMargin=0.75*inch)
+                               rightMargin=0.5*inch, leftMargin=0.5*inch,
+                               topMargin=0.5*inch, bottomMargin=0.5*inch)
         
         story = []
         
@@ -30,7 +30,7 @@ class PDFGenerator:
         title_style = self.styles['Title']
         title = Paragraph(f"EXAMEN DE MATEMÁTICAS - {examen.tipo.upper()}", title_style)
         story.append(title)
-        story.append(Spacer(1, 0.3*inch))
+        story.append(Spacer(1, 0.2*inch))
         
         # Información del examen
         info_style = self.styles['Normal']
@@ -46,9 +46,9 @@ class PDFGenerator:
         for line in info_lines:
             p = Paragraph(line, info_style)
             story.append(p)
-            story.append(Spacer(1, 0.1*inch))
+            story.append(Spacer(1, 0.05*inch))
         
-        story.append(Spacer(1, 0.3*inch))
+        story.append(Spacer(1, 0.2*inch))
         
         # Instrucciones
         instrucciones = """
@@ -60,49 +60,38 @@ class PDFGenerator:
         """
         p = Paragraph(instrucciones, info_style)
         story.append(p)
-        story.append(Spacer(1, 0.4*inch))
+        story.append(Spacer(1, 0.3*inch))
         
-        # Preguntas
+        # Preguntas - Limitado para que quepa en 2 páginas
         question_style = self.styles['Normal']
-        for i, pregunta in enumerate(examen.preguntas, 1):
+        max_preguntas = min(len(examen.preguntas), 2)  # Máximo 2 preguntas para que quepa
+        
+        for i in range(max_preguntas):
+            pregunta = examen.preguntas[i]
             # Número y enunciado de la pregunta
-            q_title = f"<b>Pregunta {i}:</b> {pregunta['enunciado']}"
+            q_title = f"<b>Pregunta {i+1}:</b> {pregunta['enunciado']}"
             p = Paragraph(q_title, question_style)
             story.append(p)
-            story.append(Spacer(1, 0.2*inch))
+            story.append(Spacer(1, 0.15*inch))
             
-            # Espacio para desarrollo
+            # Espacio para desarrollo - SIN LÍNEAS, más compacto
             desarrollo = """
             <b>Desarrollo:</b><br/>
-            <br/>
-            ___________________________________________________________________<br/>
-            <br/>
-            ___________________________________________________________________<br/>
-            <br/>
-            ___________________________________________________________________<br/>
-            <br/>
-            ___________________________________________________________________<br/>
-            <br/>
-            ___________________________________________________________________<br/>
+            <br/><br/><br/><br/><br/><br/>
             """
             p = Paragraph(desarrollo, info_style)
             story.append(p)
-            story.append(Spacer(1, 0.2*inch))
+            story.append(Spacer(1, 0.1*inch))
             
-            # Recuadro para respuesta final
+            # Recuadro para respuesta final - SIN LÍNEAS
             respuesta_final = """
-            <b>Respuesta final:</b>
-            <br/>
-            <br/>
-            ┌─────────────────────────────────────┐<br/>
-            │                                                                     │<br/>
-            │                  RESPUESTA FINAL                    │<br/>
-            │                                                                     │<br/>
-            └─────────────────────────────────────┘
+            <b>Respuesta final:</b><br/>
+            <br/><br/><br/>
             """
             p = Paragraph(respuesta_final, info_style)
             story.append(p)
-            story.append(Spacer(1, 0.4*inch))
+            if i < max_preguntas - 1:  # No agregar espacio después de la última pregunta
+                story.append(Spacer(1, 0.2*inch))
         
         # Construir PDF
         doc.build(story)

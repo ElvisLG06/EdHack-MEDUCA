@@ -148,22 +148,42 @@
                                     <p class="text-success mt-2">{{ pregunta.respuesta_correcta }}</p>
                                 </div>
                                 
-                                <!-- Student's Answer (Mock - would come from OCR) -->
+                                <!-- Student's Answer (From AI Analysis) -->
                                 <div class="mb-3">
                                     <strong>Tu Respuesta:</strong>
-                                    <div class="alert alert-light mt-2">
-                                        <i data-feather="camera" class="me-2"></i>
-                                        <em>Pendiente de análisis por OCR/IA</em>
-                                        <br><small class="text-muted">
-                                            La IA analizará tu respuesta en el cuadro de respuesta final de la imagen
-                                        </small>
-                                    </div>
+                                    {% if examen_resuelto.analisis_ia and examen_resuelto.analisis_ia.respuestas_detectadas %}
+                                        {% set respuesta_estudiante = examen_resuelto.analisis_ia.respuestas_detectadas[loop.index0] %}
+                                        <div class="alert {% if respuesta_estudiante.es_correcta %}alert-success{% else %}alert-warning{% endif %} mt-2">
+                                            <i data-feather="{% if respuesta_estudiante.es_correcta %}check{% else %}x{% endif %}" class="me-2"></i>
+                                            <strong>{{ respuesta_estudiante.respuesta_estudiante }}</strong>
+                                            <br><small class="text-muted">
+                                                {{ respuesta_estudiante.justificacion }} ({{ respuesta_estudiante.puntos }}/10 puntos)
+                                            </small>
+                                        </div>
+                                    {% else %}
+                                        <div class="alert alert-light mt-2">
+                                            <i data-feather="clock" class="me-2"></i>
+                                            <em>Procesando análisis de IA...</em>
+                                            <br><small class="text-muted">
+                                                La IA está analizando tu respuesta
+                                            </small>
+                                        </div>
+                                    {% endif %}
                                 </div>
                                 
                                 <!-- AI Feedback Section (Solo para Postest) -->
                                 {% if examen.tipo == 'postest' %}
                                 <div class="feedback-section">
                                     <strong>Retroalimentación:</strong>
+                                    {% if examen_resuelto.analisis_ia and examen_resuelto.analisis_ia.feedback_detallado %}
+                                    <div class="alert alert-info mt-2">
+                                        <i data-feather="brain" class="me-2"></i>
+                                        <strong>Feedback generado por IA:</strong>
+                                        <div class="mt-2">
+                                            {{ examen_resuelto.analisis_ia.feedback_detallado }}
+                                        </div>
+                                    </div>
+                                    {% else %}
                                     <div class="alert alert-info mt-2">
                                         <i data-feather="brain" class="me-2"></i>
                                         <strong>Feedback generado por IA:</strong>
@@ -171,6 +191,7 @@
                                             <em>El feedback aparecerá aquí una vez que la IA analice tu respuesta escrita.</em>
                                         </div>
                                     </div>
+                                    {% endif %}
                                     
                                     <!-- Teacher's Additional Comments -->
                                     <div class="mt-3">

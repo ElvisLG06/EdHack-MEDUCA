@@ -10,11 +10,11 @@
     --meduca-secondary: #64748b;
     --meduca-dark: #1e293b;
     --meduca-light: #ffffff;
-    --meduca-bg: #f8fafc;
+    --meduca-bg: #ffffff;
     --meduca-border: #e2e8f0;
     --meduca-border-radius: 0.5rem;
     --meduca-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    --meduca-text: #334155;
+    --meduca-text: #1e293b;
     --meduca-text-muted: #64748b;
 }
 
@@ -23,6 +23,23 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
     background-color: var(--meduca-bg) !important;
+    color: var(--meduca-text) !important;
+}
+
+/* Text colors for better contrast */
+.text-muted {
+    color: var(--meduca-text-muted) !important;
+}
+
+.card-text {
+    color: var(--meduca-text) !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--meduca-text) !important;
+}
+
+.navbar-text {
     color: var(--meduca-text) !important;
 }
 

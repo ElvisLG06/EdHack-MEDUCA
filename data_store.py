@@ -53,12 +53,12 @@ class DataStore:
             inscripcion = Inscripcion(estudiante.id, curso.id)
             self.add_inscripcion(inscripcion)
         
-        # Crear 4 clases como pidió el usuario
+        # Crear 4 clases como pidió el usuario - Una competencia por curso
         clases_data = [
             ("clase1", "Fracciones y Números Decimales", "comp_1_5"),
             ("clase2", "Operaciones con Números Naturales", "comp_1_5"), 
-            ("clase3", "Patrones y Secuencias", "comp_2_5"),
-            ("clase4", "Geometría Básica", "comp_4_5")
+            ("clase3", "Patrones y Secuencias", "comp_1_5"),
+            ("clase4", "Geometría Básica", "comp_1_5")
         ]
         
         clases = []
@@ -69,13 +69,18 @@ class DataStore:
         
         # Crear exámenes (pretest y postest) para cada clase
         for i, clase in enumerate(clases):
-            # Pretest
+            # Pretest - Solo 4 criterios de evaluación
             pretest_id = f"pretest_{i+1}"
             pretest = Examen(
                 pretest_id, 
                 clase.id, 
                 "pretest", 
-                ["Evaluar conocimientos previos", "Identificar fortalezas", "Detectar áreas de mejora"],
+                [
+                    "Identificar conocimientos previos sobre el tema",
+                    "Evaluar comprensión básica de conceptos",
+                    "Detectar fortalezas del estudiante",
+                    "Determinar áreas que necesitan refuerzo"
+                ],
                 [
                     {"numero": 1, "enunciado": f"Resuelve el siguiente problema de {clase.nombre.lower()}", "respuesta_correcta": "Respuesta modelo"},
                     {"numero": 2, "enunciado": f"Explica tu procedimiento para resolver {clase.nombre.lower()}", "respuesta_correcta": "Explicación modelo"}
@@ -83,13 +88,18 @@ class DataStore:
             )
             self.add_examen(pretest)
             
-            # Postest
+            # Postest - Solo 4 criterios de evaluación
             postest_id = f"postest_{i+1}"
             postest = Examen(
                 postest_id,
                 clase.id,
                 "postest",
-                ["Evaluar aprendizaje adquirido", "Medir progreso", "Validar competencias"],
+                [
+                    "Evaluar dominio de conceptos aprendidos",
+                    "Medir mejora respecto al pretest",
+                    "Validar aplicación de conocimientos",
+                    "Determinar nivel de competencia alcanzado"
+                ],
                 [
                     {"numero": 1, "enunciado": f"Aplica lo aprendido en {clase.nombre.lower()}", "respuesta_correcta": "Aplicación correcta"},
                     {"numero": 2, "enunciado": f"Demuestra tu dominio de {clase.nombre.lower()}", "respuesta_correcta": "Demostración completa"}

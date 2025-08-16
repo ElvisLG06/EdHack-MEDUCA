@@ -4,6 +4,7 @@ import logging
 from typing import List, Dict
 from google import genai
 from google.genai import types
+import base64
 
 class GeminiService:
     def __init__(self):
@@ -12,7 +13,7 @@ class GeminiService:
         self.model = "gemini-2.5-flash"
     
     def generar_criterios_evaluacion(self, competencia: str, grado: str) -> List[str]:
-        """Genera 4 criterios de evaluación para una competencia matemática específica"""
+        """Genera exactamente 4 criterios de evaluación para una competencia matemática específica"""
         prompt = f"""
         Eres un experto en educación matemática. Genera exactamente 4 criterios de evaluación específicos y medibles para la siguiente competencia matemática de {grado}° grado:
         
@@ -23,8 +24,9 @@ class GeminiService:
         - Estar alineados con el nivel de {grado}° grado
         - Cubrir diferentes aspectos de la competencia
         - Usar lenguaje claro para docentes
+        - Enfocarse en habilidades evaluables en un examen escrito
         
-        Responde ÚNICAMENTE con una lista de 4 criterios, uno por línea, sin numeración ni viñetas.
+        Responde ÚNICAMENTE con una lista de exactamente 4 criterios, uno por línea, sin numeración ni viñetas.
         """
         
         try:
@@ -41,10 +43,10 @@ class GeminiService:
                 else:
                     # Si no tenemos suficientes, rellenar con criterios genéricos
                     criterios_genericos = [
-                        "Identifica correctamente los datos del problema",
-                        "Aplica estrategias de resolución apropiadas",
-                        "Realiza cálculos de manera precisa",
-                        "Comunica claramente el proceso y resultado"
+                        "Identifica correctamente los conceptos matemáticos del problema",
+                        "Aplica procedimientos y estrategias de resolución apropiadas", 
+                        "Realiza cálculos y operaciones de manera precisa",
+                        "Presenta soluciones claras y justifica el resultado obtenido"
                     ]
                     return (criterios + criterios_genericos)[:4]
             else:
@@ -195,3 +197,117 @@ class GeminiService:
                 ],
                 "ejercicios_similares": ["Practica problemas similares", "Repasa los conceptos básicos"]
             }
+    
+    def analizar_examen_imagen(self, imagen_path: str, preguntas: List[Dict], tipo_examen: str) -> Dict:
+        """Analiza una imagen de examen usando IA para extraer respuestas y calificar"""
+        try:
+            # Leer la imagen
+            with open(imagen_path, "rb") as f:
+                image_bytes = f.read()
+            
+            # Crear prompt específico para análisis de exámenes
+            preguntas_texto = "\n".join([f"Pregunta {i+1}: {p['enunciado']} (Respuesta esperada: {p['respuesta_correcta']})" 
+                                       for i, p in enumerate(preguntas)])
+            
+            prompt = f"""
+            Eres un profesor de matemáticas experto en evaluar exámenes. Analiza esta imagen de un examen de matemáticas.
+            
+            TIPO DE EXAMEN: {tipo_examen}
+            
+            PREGUNTAS DEL EXAMEN:
+            {preguntas_texto}
+            
+            INSTRUCCIONES:
+            1. Analiza cuidadosamente la imagen del examen
+            2. Identifica las respuestas escritas por el estudiante para cada pregunta
+            3. Evalúa si las respuestas son correctas, parcialmente correctas o incorrectas
+            4. Para el PRETEST: Solo identifica respuestas y da una calificación numérica simple
+            5. Para el POSTEST: Además proporciona feedback detallado
+            
+            Responde en formato JSON:
+            {{
+                "respuestas_detectadas": [
+                    {{
+                        "pregunta": 1,
+                        "respuesta_estudiante": "respuesta que escribió el estudiante",
+                        "es_correcta": true/false,
+                        "puntos": "puntos asignados de 10",
+                        "justificacion": "breve explicación de la evaluación"
+                    }}
+                ],
+                "calificacion_total": "calificación sobre 20",
+                "observaciones_generales": "comentarios sobre la presentación, claridad, etc.",
+                "feedback_detallado": "solo para postest - feedback constructivo"
+            }}
+            """
+            
+            response = self.client.models.generate_content(
+                model="gemini-2.5-pro",  # Usar modelo más potente para análisis de imágenes
+                contents=[
+                    types.Part.from_bytes(
+                        data=image_bytes,
+                        mime_type="image/jpeg",
+                    ),
+                    prompt
+                ],
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json"
+                )
+            )
+            
+            if response.text:
+                resultado = json.loads(response.text)
+                logging.info(f"Análisis de examen completado: {resultado['calificacion_total']} puntos")
+                return resultado
+            else:
+                raise Exception("Respuesta vacía del modelo")
+                
+        except Exception as e:
+            logging.error(f"Error al analizar imagen del examen: {e}")
+            # Retornar resultado por defecto en caso de error
+            return {
+                "respuestas_detectadas": [
+                    {
+                        "pregunta": i+1,
+                        "respuesta_estudiante": "No se pudo detectar la respuesta",
+                        "es_correcta": False,
+                        "puntos": "5",
+                        "justificacion": "Error en el análisis automático"
+                    } for i in range(len(preguntas))
+                ],
+                "calificacion_total": "10",
+                "observaciones_generales": "Error en el análisis automático. Revisión manual requerida.",
+                "feedback_detallado": "No disponible debido a error técnico"
+            }
+    
+    def procesar_examen_postest(self, imagen_path: str, preguntas: List[Dict], pretest_resultado: Dict = None) -> Dict:
+        """Procesa un postest con comparación al pretest para generar feedback de progreso"""
+        resultado_base = self.analizar_examen_imagen(imagen_path, preguntas, "postest")
+        
+        if pretest_resultado:
+            # Calcular mejora
+            calificacion_pretest = float(pretest_resultado.get('calificacion_total', 0))
+            calificacion_postest = float(resultado_base.get('calificacion_total', 0))
+            mejora = calificacion_postest - calificacion_pretest
+            
+            # Agregar análisis de progreso
+            resultado_base['analisis_progreso'] = {
+                "calificacion_pretest": calificacion_pretest,
+                "calificacion_postest": calificacion_postest,
+                "mejora_puntos": mejora,
+                "porcentaje_mejora": round((mejora / 20) * 100, 1) if mejora > 0 else 0,
+                "interpretacion": self._interpretar_progreso(mejora)
+            }
+        
+        return resultado_base
+    
+    def _interpretar_progreso(self, mejora: float) -> str:
+        """Interpreta el progreso del estudiante"""
+        if mejora >= 5:
+            return "Excelente progreso! Has mejorado significativamente."
+        elif mejora >= 2:
+            return "Buen progreso. Continúa trabajando en estas áreas."
+        elif mejora >= 0:
+            return "Progreso moderado. Sigue practicando para mejorar."
+        else:
+            return "Necesitas más práctica. Revisa los conceptos fundamentales."

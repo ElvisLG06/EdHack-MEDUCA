@@ -130,22 +130,66 @@
     </div>
 </div>
 
-<!-- Recent Activity -->
+<!-- Mis Exámenes Subidos -->
 {% if cursos %}
 <div class="row mt-4">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title mb-0">
-                    <i data-feather="activity" class="me-2"></i>Actividad Reciente
+                    <i data-feather="file-check" class="me-2"></i>Mis Exámenes Subidos
                 </h5>
             </div>
             <div class="card-body">
-                <div class="text-center py-3">
-                    <i data-feather="clock" class="text-muted mb-2" style="width: 32px; height: 32px;"></i>
-                    <p class="text-muted mb-0">No hay actividad reciente</p>
-                    <small class="text-muted">Los resultados y feedback de tus exámenes aparecerán aquí</small>
-                </div>
+                {% if examenes_resueltos %}
+                    <div class="row">
+                        {% for examen_resuelto in examenes_resueltos %}
+                        {% set examen = data_store.get_examen(examen_resuelto.examen_id) %}
+                        {% set clase = data_store.get_clase(examen.clase_id) %}
+                        {% set curso = data_store.get_curso(clase.curso_id) %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 border">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <span class="badge {% if examen.tipo == 'pretest' %}bg-info{% else %}bg-success{% endif %} me-2">
+                                            {{ examen.tipo.title() }}
+                                        </span>
+                                        <small class="text-muted">{{ examen_resuelto.created_at.strftime('%d/%m/%Y') }}</small>
+                                    </div>
+                                    <h6 class="card-title">{{ clase.nombre }}</h6>
+                                    <p class="card-text small text-muted">{{ curso.nombre }}</p>
+                                    
+                                    {% if examen_resuelto.calificacion %}
+                                    <div class="mb-2">
+                                        <strong class="text-primary">{{ examen_resuelto.calificacion }}/20</strong>
+                                        <small class="text-muted">puntos</small>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="d-grid">
+                                        {% if examen.tipo == 'postest' %}
+                                        <a href="{{ url_for('feedback_estudiante', examen_resuelto_id=examen_resuelto.id) }}" 
+                                           class="btn btn-success btn-sm">
+                                            <i data-feather="message-circle" class="me-2"></i>Ver Feedback
+                                        </a>
+                                        {% else %}
+                                        <button class="btn btn-outline-secondary btn-sm" disabled>
+                                            <i data-feather="clock" class="me-2"></i>Pretest Completado
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-3">
+                        <i data-feather="upload" class="text-muted mb-2" style="width: 32px; height: 32px;"></i>
+                        <p class="text-muted mb-0">No has subido ningún examen</p>
+                        <small class="text-muted">Tus exámenes subidos aparecerán aquí cuando tu docente los cargue</small>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>

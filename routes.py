@@ -106,7 +106,11 @@ def dashboard():
         # Estudiante dashboard
         inscripciones = data_store.get_inscripciones_by_estudiante(user.id)
         cursos = [data_store.get_curso(insc.curso_id) for insc in inscripciones if data_store.get_curso(insc.curso_id)]
-        return render_template('dashboard_estudiante.html', user=user, cursos=cursos)
+        
+        # Obtener exámenes resueltos del estudiante
+        examenes_resueltos = data_store.get_examenes_resueltos_by_estudiante(user.id)
+        
+        return render_template('dashboard_estudiante.html', user=user, cursos=cursos, examenes_resueltos=examenes_resueltos)
 
 @app.route('/crear_curso', methods=['GET', 'POST'])
 @docente_required
@@ -380,19 +384,53 @@ def subir_examen_resuelto():
         try:
             file.save(filepath)
             
+            # Obtener el examen para análisis
+            examen = data_store.get_examen(examen_id)
+            if not examen:
+                flash('Examen no encontrado', 'error')
+                return redirect(request.referrer or url_for('dashboard'))
+            
+            # Analizar la imagen con IA
+            try:
+                if examen.tipo == 'pretest':
+                    # Para pretest, solo análisis básico
+                    resultado_analisis = gemini_service.analizar_examen_imagen(filepath, examen.preguntas, 'pretest')
+                else:
+                    # Para postest, análisis completo con comparación
+                    pretest_examen = next((e for e in data_store.examenes.values() 
+                                         if e.clase_id == examen.clase_id and e.tipo == 'pretest'), None)
+                    pretest_resultado = None
+                    if pretest_examen:
+                        pretest_resuelto = data_store.get_examen_resuelto_by_estudiante_examen(estudiante_id, pretest_examen.id)
+                        if pretest_resuelto and hasattr(pretest_resuelto, 'analisis_ia'):
+                            pretest_resultado = pretest_resuelto.analisis_ia
+                    
+                    resultado_analisis = gemini_service.procesar_examen_postest(filepath, examen.preguntas, pretest_resultado)
+                
+                # Extraer calificación
+                calificacion = float(resultado_analisis.get('calificacion_total', 10))
+                
+            except Exception as e:
+                logging.error(f"Error en análisis de IA: {e}")
+                resultado_analisis = {"error": "Análisis automático no disponible"}
+                calificacion = 10.0  # Calificación por defecto
+            
             if existing:
                 # Actualizar examen existente
-                existing.imagen_path = filename  # Solo el nombre del archivo
+                existing.imagen_path = filename
                 existing.estado = "completado"
-                flash('Imagen del examen actualizada exitosamente', 'success')
+                existing.calificacion = calificacion
+                existing.analisis_ia = resultado_analisis
+                flash('Imagen del examen actualizada y analizada exitosamente', 'success')
             else:
                 # Crear nuevo registro de examen resuelto
                 resuelto_id = str(uuid.uuid4())
-                respuestas = {}  # Por ahora vacío, aquí iría el OCR
-                examen_resuelto = ExamenResuelto(resuelto_id, examen_id, estudiante_id, filename, respuestas)
+                examen_resuelto = ExamenResuelto(resuelto_id, examen_id, estudiante_id, filename, {})
                 examen_resuelto.estado = "completado"
+                examen_resuelto.calificacion = calificacion
+                examen_resuelto.analisis_ia = resultado_analisis
                 data_store.add_examen_resuelto(examen_resuelto)
-                flash('Imagen del examen subida exitosamente', 'success')
+                flash('Imagen del examen subida y analizada exitosamente', 'success')
                 
         except Exception as e:
             logging.error(f"Error guardando archivo: {e}")
