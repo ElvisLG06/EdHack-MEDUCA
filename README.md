@@ -1,8 +1,8 @@
-# Sistema de Evaluación Matemática Inteligente (SEMI) - MEDUCA
+# MEDUCA
 
 ## 🎯 Descripción
 
-SEMI es una plataforma web inteligente que utiliza IA (Google Gemini) para generar criterios de evaluación y preguntas de examen personalizadas basadas en competencias matemáticas del currículo panameño.
+MEDUCA es una plataforma web inteligente que utiliza IA (Google Gemini) para generar criterios de evaluación y preguntas de examen personalizadas basadas en competencias del currículo panameño.
 
 ## ✨ Características Principales
 
@@ -164,12 +164,11 @@ uv sync --reinstall
 Para reportar problemas o solicitar nuevas funcionalidades:
 1. Revisa los logs de la aplicación
 2. Verifica la configuración de la API key
-3. Contacta al equipo de desarrollo
 
 ## 📄 Licencia
 
-Este proyecto fue desarrollado para el hackathon MEDUCA EdHack 2024.
+Este proyecto fue desarrollado para el EdHack 2025.
 
 ---
 
-**¡Disfruta usando SEMI para crear evaluaciones matemáticas inteligentes! 🎓✨**
+**¡Disfruta usando MEDUCA para crear evaluaciones inteligentes! 🎓✨**
